@@ -4046,6 +4046,7 @@ checkflex:
     if ((call_mode == 0) && (nargs > 0))
         stmtlen += (2 * nargs); /* Allow for quoted identifiers */
 
+    if (octx->ora_valid) stmtlen += (str_length(octx->ora_valid) + 23);
     if (octx->ora_before) stmtlen += (str_length(octx->ora_before) + 10);
     if (octx->ora_after)  stmtlen += (str_length(octx->ora_after)  + 10);
 
@@ -4128,6 +4129,20 @@ checkflex:
             spflag = 4;
             realm_flag = 1;
         }
+    }
+
+    if (octx->ora_valid) {
+        sptr += str_concat(sptr, 0, "  if ", -1);
+        sptr += str_concat(sptr, 0, octx->ora_valid, -1);
+        sptr += str_concat(sptr, 0, "('", -1);
+        sptr += str_concat(sptr, 0, spath, -1);
+        sptr += str_concat(sptr, 0, "') = false then", -1);
+        sptr += str_concat(sptr, 0,
+                           (char *) ((spflag == 4) ? "\n     " : "\n   "), -1);
+        sptr += str_concat(sptr, 0, "return;", -1);
+        sptr += str_concat(sptr, 0, "end", -1);
+        sptr += str_concat(sptr, 0,
+                           (char *) ((spflag == 4) ? ";\n    " : ";\n  "), -1);
     }
 
     if (octx->ora_before)
