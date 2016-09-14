@@ -2,6 +2,7 @@
 Apache PL/SQL Gateway Module
 [https://oss.oracle.com/projects/mod_owa/dist/documentation/modowa.htm]
 
+[![Build Status](https://travis-ci.org/kelatev/mod_owa.svg?branch=master)](https://travis-ci.org/kelatev/mod_owa)
 
 ## OwaValidation
 
