@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 1999-2013 Oracle Corporation, All rights reserved.
+** Copyright (c) 1999-2018 Oracle Corporation, All rights reserved.
 **
 **  Licensed under the Apache License, Version 2.0 (the "License");
 **  you may not use this file except in compliance with the License.
@@ -83,6 +83,11 @@
 ** 10/13/2015   D. McMahon      Add sql_bind_chr()
 ** 10/26/2015   J. Chung        OSX port: malloc inclusion
 ** 12/07/2015   D. McMahon      Add HTBUF_ARRAY_MAX_WIDTH
+** 02/25/2017   D. McMahon      Add os_env_dump()
+** 05/29/2018   D. McMahon      Add slotnum to connection structure
+** 08/14/2018   D. McMahon      Limit HTBUF_ARRAY_MAX_WIDTH to 32511
+** 08/20/2018   D. McMahon      Allow PATCH when OwaHttp == "REST"
+** 10/18/2018   D. McMahon      Add dad_name.
 */
 
 #ifndef MODOWA_H
@@ -98,7 +103,7 @@
 # endif
 #endif
 
-#define MODOWA_VERSION_STRING "mod_owa 2.11.3";
+#define MODOWA_VERSION_STRING "mod_owa 2.11.9";
 
 #ifdef MODOWA_WINDOWS
 
@@ -342,7 +347,7 @@ typedef struct request_rec request_rec;
 #ifdef OLD_MAX_STRING
 # define HTBUF_ARRAY_MAX_WIDTH  (HTBUF_HEADER_MAX-1)
 #else
-# define HTBUF_ARRAY_MAX_WIDTH  HTBUF_PLSQL_MAX
+# define HTBUF_ARRAY_MAX_WIDTH  (HTBUF_PLSQL_MAX-1)
 #endif
 
 /*
@@ -551,8 +556,8 @@ struct connection
     int            mem_err;
     int            c_lock;
     long_64        timestamp;
-    ub2            csid;
     int            ncflag;
+    ub2            csid;
     ub2            blob_ind;
     ub2            clob_ind;
     ub2            nlob_ind;
@@ -560,6 +565,7 @@ struct connection
     ub2            out_ind;
     ub2            rcode;
     owa_log_socks *sockctx;        /* Back-pointer to logging sockets */
+    int            slotnum;
 };
 
 #ifndef OCI_UCS2ID
@@ -662,6 +668,7 @@ struct owa_context
     owa_mt_context *mtctx;          /* Back-pointer to module configuration */
     char           *location;       /* Location name                        */
     char           *oracle_userid;  /* Oracle username/password@dbname      */
+    char           *dad_name;       /* DAD name string                      */
     char           *doc_path;       /* Document path prefix                 */
     char           *doc_long;       /* Document LONG/LONG RAW path prefix   */
     char           *doc_file;       /* Document LONG/LONG RAW path prefix   */
@@ -867,6 +874,8 @@ int     os_get_user(char *username, int bufsize);
 char   *os_env_get(char *name);
 
 char   *os_env_set(char *name, char *value);
+
+char   *os_env_dump(char *prior, un_long position);
 
 /*
 ** Memory functions

@@ -8,6 +8,8 @@ create or replace package MODOWA_TEST_PKG is
   --
   function AUTHORIZE return boolean;
   --
+  function AUTHORIZE(PROC_NAME varchar2) return boolean;
+  --
   procedure CHECK_CACHE(URI out varchar2, CHKSUM out varchar2,
                         MTYPE out varchar2, LIFE out number);
   --
@@ -20,7 +22,11 @@ create or replace package MODOWA_TEST_PKG is
   procedure TEST_LARGE(NUM_ENTRIES in number, NAME_ARRAY in VCTAB,
                        VALUE_ARRAY in VCTAB, RESERVED in VCTAB);
   --
+  procedure TEST_REWRITE(NAME_ARRAY in VCTAB, VALUE_ARRAY in VCTAB);
+  --
   procedure TEST_TWOARG(NAME_ARRAY in VCTAB, VALUE_ARRAY in VCTAB);
+  --
+  procedure TEST_PROMOTION(X varchar2, Y in VCTAB);
   --
   procedure TEST_FLEX(NUM_ENTRIES in number, NAME_ARRAY in VCTAB,
                       VALUE_ARRAY in VCTAB, RESERVED in VCTAB);
@@ -47,6 +53,9 @@ create or replace package MODOWA_TEST_PKG is
   procedure TEST_XML;
   --
   procedure TEST_DOCLOAD;
+  --
+  procedure TEST_REST(NUM_ENTRIES in number, NAME_ARRAY in VCTAB,
+                      VALUE_ARRAY in VCTAB, RESERVED in VCTAB);
   --
   procedure TEST_TILDE(R in raw, MTYPE in out varchar2, PBLOB out blob);
   --
@@ -96,6 +105,18 @@ create or replace package body MODOWA_TEST_PKG is
   --
   function AUTHORIZE return boolean is
   begin
+    return(TRUE);
+  end AUTHORIZE;
+  --
+  function AUTHORIZE(PROC_NAME varchar2) return boolean is
+    V_PREFIX varchar2(30) := 'MODOWA_TEST_PKG.';
+  begin
+    if (instr(V_PREFIX, upper(PROC_NAME)) <> 1) then
+      return(FALSE);
+    end if;
+    if (instr('.', substr(upper(PROC_NAME),length(V_PREFIX)+1)) <> 0) then
+      return(FALSE);
+    end if;
     return(TRUE);
   end AUTHORIZE;
   --
@@ -187,6 +208,22 @@ create or replace package body MODOWA_TEST_PKG is
       HTP.P(VALUE_ARRAY(I));
     end loop;
     HTP.P('</pre></body></html>');
+  end;
+  --
+  procedure TEST_REWRITE(NAME_ARRAY in VCTAB, VALUE_ARRAY in VCTAB) is
+  begin
+    TEST_LARGE(least(NAME_ARRAY.count(),VALUE_ARRAY.count()),
+               NAME_ARRAY, VALUE_ARRAY, VALUE_ARRAY);
+  end;
+  --
+  procedure TEST_PROMOTION(X varchar2, Y in VCTAB) is
+  begin
+    OWA_UTIL.MIME_HEADER('text/html', TRUE);
+    HTP.P('<html><body bgcolor="#ddddee" text="#000000"><p>');
+    for I in 1..Y.count() loop
+      HTP.P(X||' = '||Y(I)||'<br>');
+    end loop;
+    HTP.P('</p></body></html>');
   end;
   --
   procedure TEST_TWOARG(NAME_ARRAY in VCTAB, VALUE_ARRAY in VCTAB) is
@@ -318,6 +355,37 @@ create or replace package body MODOWA_TEST_PKG is
     OWA_UTIL.HTTP_HEADER_CLOSE;
     WPG_DOCLOAD.DOWNLOAD_FILE(IMG);
   end TEST_DOCLOAD;
+  --
+  procedure TEST_REST(NUM_ENTRIES in number, NAME_ARRAY in VCTAB,
+                      VALUE_ARRAY in VCTAB, RESERVED in VCTAB) is
+    BLEN        number;
+    REST_METHOD varchar2(30);
+    CTYPE       varchar2(255);
+    FILE_NAME   varchar2(255) := '';
+  begin
+    REST_METHOD := OWA_UTIL.GET_CGI_ENV('REQUEST_METHOD');
+
+    for I in 1..NUM_ENTRIES loop
+      if (NAME_ARRAY(I) = 'MODOWA$CONTENT_BODY') then
+        FILE_NAME := VALUE_ARRAY(I);
+      end if;
+    end loop;
+
+    OWA_UTIL.MIME_HEADER('text/plain', false);
+    HTP.P('Method used was '||REST_METHOD||CHR(10));
+
+    if (FILE_NAME is not null) then
+      begin
+        HTP.P('Content was staged as '||FILE_NAME||CHR(10));
+--      select length(BLOB_CONTENT), MIME_TYPE into BLEN, CTYPE
+--        from DEMO_DOCLOAD where NAME = FILE_NAME;
+--      HTP.P('Type of content was '||CTYPE||chr(10));
+--      HTP.P('Length of content was '||to_char(BLEN)||chr(10));
+      exception when NO_DATA_FOUND then
+        null;
+      end;
+    end if;
+  end TEST_REST;
   --
   procedure TEST_TILDE(R in raw, MTYPE in out varchar2, PBLOB out blob) is
     RLEN   number;

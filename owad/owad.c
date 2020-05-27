@@ -65,6 +65,7 @@
 ** 10/21/2013   D. McMahon      Allow status line text in morq_set_status()
 ** 04/27/2015   D. McMahon      Bump version
 ** 05/07/2015   D. McMahon      Make morq_get_range use 64-bit ints
+** 10/18/2018   D. McMahon      OwaDadName/dad_name support
 */
 
 #define APACHE_LINKAGE
@@ -2057,6 +2058,8 @@ void parse_locations(daemon_context *pdctx, char *fname, int nthreads)
                     octx->authrealm = find_arg(&sptr);
                 else if (!str_compare(lptr, "Optimizer", -1, 1))
                     octx->optimizer_mode = find_arg(&sptr);
+                else if (!str_compare(lptr, "DadName", -1, 1))
+                    octx->dad_name = find_arg(&sptr);
                 else if (!str_compare(lptr, "DocPath", -1, 1))
                     octx->doc_path = find_arg(&sptr);
                 else if (!str_compare(lptr, "DocProc", -1, 1))

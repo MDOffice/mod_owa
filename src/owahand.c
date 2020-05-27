@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 1999-2016 Oracle Corporation, All rights reserved.
+** Copyright (c) 1999-2018 Oracle Corporation, All rights reserved.
 **
 **  Licensed under the Apache License, Version 2.0 (the "License");
 **  you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@
 ** 09/24/2013   D. McMahon      Get errinfo from sql_connect (password expiry)
 ** 09/26/2013   D. McMahon      Pass client IP address to transfer_env
 ** 10/21/2013   D. McMahon      Changed interface to morq_set_status()
-** 04/27/2014   D. McMahon      Zero init temporary connection hdb
+** 04/27/2014   D. McMahon      Zero init temporary connection cdefault
 ** 12/23/2014   D. McMahon      Add marker argument to owa_wlobtable()
 ** 04/27/2015   D. McMahon      Allow oversized file uploads in parse_args()
 ** 05/11/2015   D. McMahon      Allow read of large REST body to be deferred
@@ -92,6 +92,13 @@
 ** 12/07/2015   D. McMahon      Widen array bind limit to 32512
 ** 03/07/2016   D. McMahon      parse_args strips trailing dots
 ** 05/04/2016   D. McMahon      OwaReject exact match for strings with suffix
+** 01/02/2018   D. McMahon      Widen ERRBUF_SIZE for OS errors
+** 05/24/2018   D. McMahon      Fix volatile for connection lock/unlock code
+** 06/01/2018   D. McMahon      Add volatile to the describe cache
+** 08/14/2018   D. McMahon      (HTBUF_ARRAY_MAX_WIDTH + 1) for '\0'
+** 08/20/2018   D. McMahon      Reclassify PATCH as a REST method
+** 10/18/2018   D. McMahon      Add DAD_NAME to the CGI environment
+** 10/22/2018   D. McMahon      Set PATH_INFO for OwaStart
 */
 
 #define WITH_OCI
@@ -108,6 +115,8 @@
 #ifndef MODOWA_WINDOWS
 # define OWA_USE_ALLOCA
 #endif
+
+#define ERRBUF_SIZE  OCI_ERROR_MAXMSG_SIZE+HTBUF_HEADER_MAX+SQL_NAME_MAX+50
 
 static char empty_string[] = "\0";
 
@@ -155,12 +164,12 @@ static void *resize_arr(request_rec *r, void *ptr, int elsize, int currsz)
 */
 static connection *lock_connection(owa_context *octx, char *session)
 {
-    int                  i;
-    volatile connection *c_pool;
+    int                   i;
+    volatile connection *cptr;
 
     if (octx->poolsize == 0) return((connection *)0);
 
-    c_pool = octx->c_pool;
+    cptr = octx->c_pool;
 
     if (!mowa_semaphore_get(octx)) return((connection *)0);
     mowa_acquire_mutex(octx);
@@ -170,10 +179,10 @@ static connection *lock_connection(owa_context *octx, char *session)
         /* Search for any reusable or available connection handle/slot */
         for (i = 0; i < octx->poolsize; ++i)
         {
-            if ((c_pool->c_lock == C_LOCK_UNUSED) ||
-                (c_pool->c_lock == C_LOCK_AVAILABLE))
+            if ((cptr->c_lock == C_LOCK_UNUSED) ||
+                (cptr->c_lock == C_LOCK_AVAILABLE))
                 break;
-            ++c_pool;
+            ++cptr;
         }
     }
     else /* Session-matching search */
@@ -181,25 +190,25 @@ static connection *lock_connection(owa_context *octx, char *session)
         /* First see if there is a session match */
         for (i = 0; i < octx->poolsize; ++i)
         {
-            if (c_pool->session)
-              if (!str_compare(c_pool->session, session, -1, 0))
-                if ((c_pool->c_lock == C_LOCK_UNUSED) ||
-                    (c_pool->c_lock == C_LOCK_AVAILABLE))
+            if (cptr->session)
+              if (!str_compare(cptr->session, session, -1, 0))
+                if ((cptr->c_lock == C_LOCK_UNUSED) ||
+                    (cptr->c_lock == C_LOCK_AVAILABLE))
                   break;
-            ++c_pool;
+            ++cptr;
         }
 
         /* Then look for a connection with no session */
         if (i == octx->poolsize)
         {
-            c_pool = octx->c_pool;
+            cptr = octx->c_pool;
             for (i = 0; i < octx->poolsize; ++i)
             {
-                if (c_pool->session == (char *)0)
-                  if ((c_pool->c_lock == C_LOCK_UNUSED) ||
-                      (c_pool->c_lock == C_LOCK_AVAILABLE))
+                if (cptr->session == (char *)0)
+                  if ((cptr->c_lock == C_LOCK_UNUSED) ||
+                      (cptr->c_lock == C_LOCK_AVAILABLE))
                     break;
-                ++c_pool;
+                ++cptr;
             }
         }
 
@@ -213,27 +222,28 @@ static connection *lock_connection(owa_context *octx, char *session)
         */
         if (i == octx->poolsize)
         {
-            c_pool = octx->c_pool;
+            cptr = octx->c_pool;
             for (i = 0; i < octx->poolsize; ++i)
             {
-                if ((c_pool->c_lock == C_LOCK_UNUSED) ||
-                    (c_pool->c_lock == C_LOCK_AVAILABLE))
+                if ((cptr->c_lock == C_LOCK_UNUSED) ||
+                    (cptr->c_lock == C_LOCK_AVAILABLE))
                     break;
-                ++c_pool;
+                ++cptr;
             }
         }
     }
 
     if (i < octx->poolsize)
     {
-        --(octx->poolstats[c_pool->c_lock]);
+        --(octx->poolstats[cptr->c_lock]);
         ++(octx->poolstats[C_LOCK_INUSE]);
-        ++(c_pool->c_lock);
+        ++(cptr->c_lock);
+        cptr->slotnum = (int)(cptr - octx->c_pool);
     }
     else
-        c_pool = (connection *)0;
+        cptr = (connection *)0;
 
-    if (!c_pool)
+    if (!cptr)
         mowa_semaphore_put(octx);
     else
         owa_shmem_update(octx->mapmem, &(octx->shm_offset),
@@ -241,7 +251,7 @@ static connection *lock_connection(owa_context *octx, char *session)
 
     mowa_release_mutex(octx);
 
-    return((connection *)c_pool);
+    return((connection *)cptr);
 }
 
 /*
@@ -249,18 +259,20 @@ static connection *lock_connection(owa_context *octx, char *session)
 */
 static void unlock_connection(owa_context *octx, connection *c)
 {
-    int     lock_state;
-    long_64 t;
+    volatile connection *cptr = c;
+    int                   lock_state;
+    long_64               t;
 
     t = os_get_component_time(0);
-    if (c->c_lock == C_LOCK_INUSE)        lock_state = C_LOCK_AVAILABLE;
-    else if (c->c_lock != C_LOCK_OFFLINE) lock_state = C_LOCK_UNUSED;
-    else                                  lock_state = c->c_lock;
+    if (cptr->c_lock == C_LOCK_INUSE)        lock_state = C_LOCK_AVAILABLE;
+    else if (cptr->c_lock != C_LOCK_OFFLINE) lock_state = C_LOCK_UNUSED;
+    else                                     lock_state = C_LOCK_OFFLINE;
     --(octx->poolstats[C_LOCK_INUSE]);
     ++(octx->poolstats[lock_state]);
     mowa_acquire_mutex(octx);
-    c->timestamp = util_component_to_stamp(t);
-    c->c_lock = lock_state;
+    cptr->mem_err = 0;
+    cptr->timestamp = util_component_to_stamp(t);
+    cptr->c_lock = lock_state;
     owa_shmem_update(octx->mapmem, &(octx->shm_offset),
                      octx->realpid, octx->location, octx->poolstats);
     mowa_release_mutex(octx);
@@ -569,8 +581,12 @@ static void cache_describe(owa_context *octx, char *pname, int nargs,
 
         /* Add to describe cache */
         mowa_acquire_mutex(octx);
-        dptr->next = octx->desc_cache;
-        octx->desc_cache = dptr;
+        {
+          volatile owa_context *optr = octx;
+          /* ### This should use a compare-and-swap ### */
+          dptr->next = optr->desc_cache;
+          optr->desc_cache = dptr;
+        }
         mowa_release_mutex(octx);
     }
 }
@@ -1440,7 +1456,7 @@ static int search_env(owa_context *octx, request_rec *r,
           mem_copy(usrhdr, usr, hdrlen);
           usr = usrhdr;
         }
-        
+
         /* Look up the password header */
         pwd = morq_get_env(r, pwdhdr);
         if (!pwd)
@@ -1558,10 +1574,40 @@ static int search_env(owa_context *octx, request_rec *r,
         ++i;
     }
 
+#ifdef NEVER
+    /* Force a value for DOC_ACCESS_PATH as well? */
+    if ((octx->doc_table) && (octx->doc_path))
+    {
+        vptr = octx->doc_path;
+        nptr = (char *)"DOC_ACCESS_PATH";
+        morq_table_put(r, OWA_TABLE_SUBPROC, 0, nptr, vptr);
+        n = str_length(nptr);
+        if (n > nwidth) nwidth = n;
+        n = str_length(vptr);
+        if (n > vwidth) vwidth = n;
+        ++i;
+    }
+#endif
+
     if (octx->altflags & ALT_MODE_CACHE)
     {
         nptr = (char *)"MODOWA_PAGE_CACHE";
         vptr = (char *)"enabled";
+        morq_table_put(r, OWA_TABLE_SUBPROC, 0, nptr, vptr);
+        n = str_length(nptr);
+        if (n > nwidth) nwidth = n;
+        n = str_length(vptr);
+        if (n > vwidth) vwidth = n;
+        ++i;
+    }
+
+    /*
+    ** Set a value for DAD_NAME if configured.
+    */
+    if (octx->dad_name)
+    {
+        nptr = (char *)"DAD_NAME";
+        vptr = octx->dad_name;
         morq_table_put(r, OWA_TABLE_SUBPROC, 0, nptr, vptr);
         n = str_length(nptr);
         if (n > nwidth) nwidth = n;
@@ -2670,7 +2716,7 @@ static char *get_wpg_field(char **pbuf)
       return(fstart);
     }
   }
-  
+
   fend = str_char(fstart, 'X', 0);
   if (fend)
   {
@@ -2686,7 +2732,7 @@ static char *get_wpg_field(char **pbuf)
 int owa_handle_request(owa_context *octx, request_rec *r,
                        char *req_args, int req_method, owa_request *owa_req)
 {
-    connection    hdb;
+    connection    cdefault;
     connection   *c;
     int           diagflag;
     int           control_flag = 0;
@@ -2759,7 +2805,7 @@ int owa_handle_request(owa_context *octx, request_rec *r,
     char          pdocload[HTBUF_HEADER_MAX];
     char          pcdisp[HTBUF_HEADER_MAX];
     char          prealm[HTBUF_LINE_LENGTH];
-    char          errbuf[OCI_ERROR_MAXMSG_SIZE + 1];
+    char          errbuf[ERRBUF_SIZE];
     char          emptystr[2];
     char         *arg_strs[2];
     int           adx;
@@ -2965,8 +3011,10 @@ int owa_handle_request(owa_context *octx, request_rec *r,
 
     if (*spath == '\0') return(HTTP_BAD_REQUEST);
 
-    /* If this is a blind request, issue a redirect to the start page */
+    /* If this is a blind request */
     if (sptr == octx->doc_start)
+    {
+      /* Issue a redirect to the start page */
       if (*sptr == '!')
       {
         str_copy(pmimetype, octx->location);
@@ -2981,6 +3029,31 @@ int owa_handle_request(owa_context *octx, request_rec *r,
         morq_set_status(r, HTTP_MOVED_TEMPORARILY, (char *)0);
         return(rstatus);
       }
+      /* Otherwise force PATH_INFO to match OwaStart */
+      else
+      {
+        char  doc_start[HTBUF_HEADER_MAX];
+        int   reset = morq_get_env(r, (char *)env_path_name) ? 1 : 0;
+        int   wd;
+
+        if (*sptr != '/')
+        {
+          wd = str_length(sptr);
+          if (wd > (HTBUF_HEADER_MAX - 2)) wd = HTBUF_HEADER_MAX - 2;
+          *doc_start = '/';
+          mem_copy(doc_start + 1, sptr, (size_t)wd);
+          doc_start[wd + 1] = '\0';
+          sptr = doc_start;
+        }
+
+        morq_table_put(r, OWA_TABLE_SUBPROC, reset, (char *)env_path_name, sptr);
+        wd = str_length((char *)env_path_name);
+        if (wd > nwidth) nwidth = wd;
+        wd = str_length(sptr);
+        if (wd > vwidth) vwidth = wd;
+        if (!reset) ++nenv;
+      }
+    }
 
     /* Check for disallowed patterns */
     for (i = 0; i < octx->nreject; ++i)
@@ -3151,10 +3224,11 @@ checkflex:
         /* Discard any body */
         morq_stream(r, 1);
     }
-    else if ((req_method == DAV_METHOD_PUT) ||
-             (req_method == DAV_METHOD_DELETE))
+    else if ((req_method == DAV_METHOD_PUT)    ||
+             (req_method == DAV_METHOD_DELETE) ||
+             (req_method == DAV_METHOD_PATCH))
     {
-        /* PUT/DELETE allowed only if configured for REST operations */
+        /* PUT/DELETE/PATCH allowed only if configured for REST operations */
         if (octx->dav_mode < 1) return(HTTP_NOT_IMPLEMENTED);
 
         /* Treat the body in the same manner as a POST */
@@ -3644,7 +3718,7 @@ checkflex:
                 if (n < HTBUF_ARRAY_MAX_WIDTH)
                 {
                     n = (int)util_round((un_long)n, octx->scale_round);
-                    if (n > HTBUF_ARRAY_MAX_WIDTH) n = HTBUF_ARRAY_MAX_WIDTH;
+                    if (n > HTBUF_ARRAY_MAX_WIDTH) n = HTBUF_ARRAY_MAX_WIDTH+1;
                 }
             }
         }
@@ -3778,12 +3852,12 @@ checkflex:
         for (i = 0; i < nargs; ++i)
         {
             j = param_width[i];
-            if (j >= HTBUF_ARRAY_MAX_WIDTH) j = HTBUF_ARRAY_MAX_WIDTH;
+            if (j > HTBUF_ARRAY_MAX_WIDTH) j = HTBUF_ARRAY_MAX_WIDTH+1;
             if (j > n) n = j;
             if (param_ptrs[i][j - 1] != '\0') param_ptrs[i][j - 1] = '\0';
         }
         n = (int)util_round((un_long)n, octx->scale_round);
-        if (n > HTBUF_ARRAY_MAX_WIDTH) n = HTBUF_ARRAY_MAX_WIDTH;
+        if (n > HTBUF_ARRAY_MAX_WIDTH) n = HTBUF_ARRAY_MAX_WIDTH+1;
         param_width[2] = (sb4)n;
         param_value[2] = (char *)0;
         param_temp = (char *)"\0\0";
@@ -4046,7 +4120,7 @@ checkflex:
     if ((call_mode == 0) && (nargs > 0))
         stmtlen += (2 * nargs); /* Allow for quoted identifiers */
 
-    if (octx->ora_valid) stmtlen += (str_length(octx->ora_valid) + 23);
+    if (octx->ora_valid)  stmtlen += (str_length(octx->ora_valid) + 23);
     if (octx->ora_before) stmtlen += (str_length(octx->ora_before) + 10);
     if (octx->ora_after)  stmtlen += (str_length(octx->ora_after)  + 10);
 
@@ -4131,18 +4205,19 @@ checkflex:
         }
     }
 
-    if (octx->ora_valid) {
+    if (octx->ora_valid)
+    {
         sptr += str_concat(sptr, 0, "  if ", -1);
         sptr += str_concat(sptr, 0, octx->ora_valid, -1);
         sptr += str_concat(sptr, 0, "('", -1);
         sptr += str_concat(sptr, 0, spath, -1);
         sptr += str_concat(sptr, 0, "') = false then", -1);
         sptr += str_concat(sptr, 0,
-                           (char *) ((spflag == 4) ? "\n     " : "\n   "), -1);
+                           (char *)((spflag == 4) ? "\n     " : "\n   "), -1);
         sptr += str_concat(sptr, 0, "return;", -1);
-        sptr += str_concat(sptr, 0, "end", -1);
+        sptr += str_concat(sptr, 0, "end if;", -1);
         sptr += str_concat(sptr, 0,
-                           (char *) ((spflag == 4) ? ";\n    " : ";\n  "), -1);
+                           (char *)((spflag == 4) ? "\n    " : "\n  "), -1);
     }
 
     if (octx->ora_before)
@@ -4507,11 +4582,12 @@ checkflex:
                       spath, pidstr, 0, 0);
           return(HTTP_INTERNAL_SERVER_ERROR);
         }
-        mem_zero(&hdb, sizeof(hdb));
-        c = &hdb;
+        mem_zero(&cdefault, sizeof(cdefault));
+        c = &cdefault;
         c->csid = 0;
         c->c_lock = C_LOCK_NEW;
         c->session = (char *)0;
+        c->slotnum = -1; /* Mark it as a temp connection */
         c->sockctx = (owa_log_socks *)0; /* No logging on temp connection */
     }
     retrycount = (c->c_lock == C_LOCK_NEW) ? 1 : 0;
@@ -4703,7 +4779,7 @@ rerun_statement:
                                             pmimetype, life, outbuf))
                       {
                           /* Success, unlock the connection and return */
-                          if (c == &hdb)
+                          if (c->slotnum < 0)
                               sql_disconnect(c);
                           else
                           {
@@ -4895,7 +4971,7 @@ rerun_statement:
     if (octx->altflags & ALT_MODE_LOGGING)
         owa_log_send(octx, r, c, owa_req);
 
-    cstatus = put_connection(octx, status, pidstr, c, &hdb);
+    cstatus = put_connection(octx, status, pidstr, c, &cdefault);
 
     if (status == OCI_SUCCESS)
         ++sphase;
@@ -4925,10 +5001,10 @@ rerun_statement:
           if (issue_redirect(r, octx, pstatus, spath, &rstatus, errbuf))
             return(rstatus);
 
-        return(sql_error(r, &hdb, status, sphase, diagflag, octx->diagfile));
+        return(sql_error(r, &cdefault, status, sphase, diagflag, octx->diagfile));
     }
-    if (hdb.mem_err > 0)
-        return(mem_error(r, hdb.mem_err, diagflag));
+    if (cdefault.mem_err > 0)
+        return(mem_error(r, cdefault.mem_err, diagflag));
     return(rstatus);
 }
 
@@ -4948,9 +5024,9 @@ int owa_dav_request(owa_context *octx, request_rec *r,
 */
 void owa_cleanup(owa_context *octx)
 {
-    sword       status;
     connection *c;
-    char        errbuf[OCI_ERROR_MAXMSG_SIZE + 1];
+    sword       status;
+    char        errbuf[ERRBUF_SIZE];
 
     if (!(octx->init_complete)) return;
 

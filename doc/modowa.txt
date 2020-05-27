@@ -1,9 +1,9 @@
                      Apache PL/SQL Gateway OWA Module (mod_owa)
                                  Doug McMahon
-                               September 9, 2016
-                                Version 2.11.3
+                               October 21, 2018
+                                Version 2.11.9
 
-       Copyright (c) 1999-2016 Oracle Corporation, All rights reserved.
+       Copyright (c) 1999-2018 Oracle Corporation, All rights reserved.
 
 This module is a demonstration and example of the use of Oracle technology.
 It is made available for use at your own risk with no warranty of any kind.
@@ -26,8 +26,7 @@ through SQL*Net to your procedures, and responses returned the same way.
 HTTP header elements are made available via a CGI-like mechanism.
 
 The original version of mod_owa was written by Alvydas Gelzinis
-(alvydas@kada.lt) and Oksana Kulikova (oksana@kada.lt), who still maintain
-their version at http://www.kada.lt/alv/apache/mod_owa.  My version is
+(alvydas@kada.lt) and Oksana Kulikova (oksana@kada.lt).  My version is
 a rewrite, adding functionality omitted by the original version, fixing
 several bugs, and adding some performance improvements.  The motivation
 for this was to provide access to OWA-based content through the Apache
@@ -101,6 +100,8 @@ If you have problems or questions, you can e-mail at Doug.McMahon@oracle.com.
 Improvements and Enhancements
 =============================
 
+* Add OwaDadName directive.
+* Treat PATCH as a REST method for OwaHttp.
 * OwaReject does exact matches for PACKAGE.PROCEDURE strings.
 * Allow up to 32512 bytes wide for array bindings.
 * OSX port by John T. Chung of Nyquest Consulting, LLC.
@@ -187,6 +188,9 @@ Improvements and Enhancements
 Bugs Found/Fixed
 ================
 
+* Pass OwaStart procedure as the CGI variable PATH_INFO.
+* Add space for trailing null after 32512 bytes.
+* Fix missing mutex for multi-threaded connection pool.
 * Fix separator scan for BIG-5, GBK, and Shift-JIS character sets.
 * Strip trailing suffix on parameter names for multipart requests
   when in Apex mode.
@@ -574,7 +578,7 @@ This clock will run past the maximum value of a 32-bit signed integer and
 will wrap around, appearing to be a large negative integer, on or about
 January 19, 2038.  mod_owa is potentially vulnerable to this problem,
 although because it uses 32-bit unsigned integers, mod_owa's internal
-timestamp values may still work until approximately 2106.  mod_owa uses
+timestamp values may still work until approximately 2116.  mod_owa uses
 Unix-like timestamps internally even on Windows.  Any problem would most
 likely affect the file-system caching feature, because of the way timestamps
 are reported from that layer.  Other areas of the code that consult the
@@ -822,6 +826,37 @@ some common errors with mod_owa installations:
   sometimes accidentally break the environment variables is with
   mod_env.
 
+  OCI connection issues
+  ---------------------
+  The OCI connect operation can fail for any number of reasons.
+  The primary ones are not having the Oracle environment variables
+  set properly, lack of file-system access to ORACLE_HOME from the
+  Apache run-time user, incorrect settings for TNSNAMES.ORA, or
+  lack of access to the Oracle Wallet. To help diagnose some of
+  these issues, you can set environment variable MODOWA_DUMP_ENV
+  to a file path/name, and on connect failures, mod_owa will dump
+  information (mainly the OS environment variables) to the
+  specified file.
+
+  Firewall disconnects
+  --------------------
+  Some users have reported that firewall or other networking infrastructure
+  sometimes kills idle sqlnet connections without notifying the OCI that
+  the socket connection to the database is no longer valid. This leads to
+  sqlnet "hangs" when an idle (but now dead) connection is drawn from a
+  connection pool. I'm not aware of any solution to this type of problem
+  that I'm able to add to mod_owa. If OCI calls the socket layer to
+  transmit SQL to the database, and doesn't get an error code from the
+  operating system, it will then wait for a response from the database.
+  If the message didn't get through, it will hang waiting for a response
+  that will never come. I suspect that either the firewall or the OS is
+  is not configured properly when this type of failure occurs. You might
+  be able to avoid the problem by setting SQLNET.EXPIRE_TIME on the
+  database server side to a value that cleanly closes outstanding
+  connections at an interval that's more frequent than the firewall
+  kills them. Another work-around is to set OwaPool to 0 to avoid
+  mod_owa connection reuse entirely.
+
   SELinux issues
   --------------
   It's important to make sure Oracle's OCI library and associated
@@ -1007,6 +1042,7 @@ Summary of directives:
   OwaHttp         oracle_http      set level of HTTP method support
   OwaDav          oracle_dav       set handler for REST and DAV operations
   OwaRefXml       refcur_xml       set REF cursor XML tags
+  OwaDadName      dad_name         set DAD_NAME CGI parameter
 
                    Global Directives
 
@@ -1393,8 +1429,8 @@ provided in later sections of this document.
   OwaHttp          This optional directive specifies the level of HTTP
   oracle_http      protocol support. The default is "NORMAL", which supports
                    only GET and POST, and is compatible with previous releases
-                   of mod_owa. "REST" adds support for the PUT and DELETE
-                   methods. "DAV" is unsupported at this time.
+                   of mod_owa. "REST" adds support for the PUT, DELETE and
+                   PATCH methods. "DAV" is unsupported at this time.
   OwaDav           This optional directive specifies a procedure to handle
   oracle_dav       REST and DAV requests.
   OwaRefXml        This directive can be used to override the tags used when
@@ -1402,6 +1438,8 @@ provided in later sections of this document.
                    the root tag, the row tag, and the namespace prefix and URI.
                    Example:
                      OwaRefXml  employees emp hr "http://mycorp.com/hr"
+  OwaDadName       This directive sets the DAD_NAME CGI variable.
+  dad_name
 
 
   Directive           Description
@@ -2903,19 +2941,52 @@ which mod_owa will call as:
   :B2 is an output string for the response mime type
   :B3 is an output BLOB locator for a binary response
 
-Up to 32512 bytes of raw data (the PL/SQL limit) can be passed in this
-manner.  The two output arguments allow you to return a RAW response
-directly from your procedure.  If you return a non-null result for the
-BLOB, mod_owa will skip the normal GET_PAGE phase and use the contents
-of the BLOB as the response.  In that event, mod_owa will take the
-document mime type from the second argument (additional header values
-can also be passed in this buffer - see the previous section on file
-downloads for information on how to do that).
+Up to 32512 bytes of raw data can be passed in this manner.  The two output
+arguments allow you to return a RAW response directly from your procedure.
+If you return a non-null result for the BLOB, mod_owa will skip the normal
+GET_PAGE phase and use the contents of the BLOB as the response.  In that
+event, mod_owa will take the document mime type from the second argument
+(additional header values can also be passed in this buffer - see the
+previous section on file downloads for information on how to do that).
 
 If you are running the Oracle 7.3 build of mod_owa, the call will have
 only the first argument containing the RAW input data, because LOBs
 aren't supported.  You must therefore return your response via GET_PAGE
 or a GET_PAGE alternate (see later section).
+
+Error Status Returns
+====================
+
+The PL/SQL gateway allows you to return an HTTP error status code via a
+call to OWA_UTIL.STATUS_LINE. Example:
+</p>
+
+  OWA_UTIL.STATUS_LINE(404, Your_Key||' not found', TRUE);
+
+In general, mod_owa allows Apache to handle the generation of an error page
+by passing the status code back to Apache. How it gets handled depends on
+how you configure Apache. By default, Apache typically generates HTML error
+pages with boilerplate text. For example, it commonly generates an HTML page
+of the following form in response to a 404:
+
+  Not Found
+  The requested URL /xxxxx was not found on this server.
+
+When you allow Apache to handle the errors in this manner, it effectively
+rewrites them; your client will receive a status code of 200 and an HTML
+content page, instead of the original error code and message.
+
+mod_owa allows you to avoid this in most cases by supplying your own error
+page. The minimum requirement is that you supply a Content-Type header,
+for example:
+
+  OWA_UTIL.MIME_HEADER('text/plain', FALSE);
+  OWA_UTIL.STATUS_LINE(404, Your_Key||' not found', TRUE);
+
+You can optionally render your own error page following the headers. mod_owa
+will take either the presence of a Content-Type header or the presence of a
+content page as an indication that your PL/SQL wishes to control the error
+response. REST applications in particular may need to do this.
 
 *******
 Options
@@ -3622,7 +3693,7 @@ optional OwaHttp parameter, this can be expanded to include PUT and
 DELETE requests, or even the full set of DAV requests.
 
 * NORMAL The mod_owa default, compatible with earlier releases.
-* REST   Enables mod_owa to handle PUT and DELETE to support REST services.
+* REST   Enables mod_owa to handle PUT, DELETE and PATCH to support REST services.
 * DAV    Enables all DAV operations (not yet completed).
 
 If the request contains a content body that cannot be interpreted as
@@ -3630,6 +3701,7 @@ HTML form arguments, and the content body is not of zero length, mod_owa
 will treat it as a file upload. This is enabled only if REST or DAV is
 specified. The body is delivered as an extra parameter, MODOWA$CONTENT_BODY.
 For now, this works only with the Apex-style document upload (OwaDocTable).
+The HTTP method can be obtained from the CGI variable "REQUEST_METHOD".
 
 A related parameter is OwaDav, which allows you to configure a procedure
 to handle REST (or, eventually, DAV) requests. If configured, this
@@ -5206,6 +5278,7 @@ features:
   picking up a dependency on an XML parser, though I believe I could
   use Oracle's which is public and should be available in the same
   library that supplies OCI.
+  Also, the OPTIONS verb should probably be supported as a REST method.
 
   Stateful sessions
   -----------------

@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 1999-2016 Oracle Corporation, All rights reserved.
+** Copyright (c) 1999-2018 Oracle Corporation, All rights reserved.
 **
 **  Licensed under the Apache License, Version 2.0 (the "License");
 **  you may not use this file except in compliance with the License.
@@ -71,6 +71,9 @@
 ** 10/21/2013   D. McMahon      Allow status line text in morq_set_status()
 ** 05/07/2015   D. McMahon      Make morq_get_range use 64-bit ints
 ** 09/11/2015   D. McMahon      Disallow control characters in mime types
+** 05/30/2018   D. McMahon      Fix mutex initialization
+** 08/20/2018   D. McMahon      Reclassify PATCH as a REST method
+** 10/18/2018   D. McMahon      Add OwaDadName
 */
 
 #ifdef APACHE24
@@ -234,9 +237,9 @@ void morq_create_mutex(request_rec *request, owa_context *octx)
     cfg = (oracle_config *)ap_get_module_config(s->module_config, &owa_module);
     if (cfg)
     {
-      if (!(cfg->tinterval)) return;
-      if (!InvalidMutex(cfg->o_mutex))
-        os_mutex_acquire(cfg->o_mutex, SHMEM_WAIT_INFINITE);
+      if (cfg->tinterval)
+        if (!InvalidMutex(cfg->o_mutex))
+          os_mutex_acquire(cfg->o_mutex, SHMEM_WAIT_INFINITE);
     }
     if (InvalidMutex(octx->mtctx->c_mutex))
         octx->mtctx->c_mutex = os_mutex_create((char *)0, 1);
@@ -614,7 +617,7 @@ static void oracle_thread(void *tctx)
 
             if (!InvalidMutex(cfg->o_mutex))
                 os_mutex_release(cfg->o_mutex);
- 
+
             /*
             ** ### There is some possibility that exit
             ** ### processing is being done while this loop
@@ -654,16 +657,19 @@ static int get_dav_method(int m)
   int x = -1; /* Unknown or unsupported */
   switch(m)
   {
+  /* OWA standard methods */
   case M_GET:              x = DAV_METHOD_GET;              break;
-  case M_PUT:              x = DAV_METHOD_PUT;              break;
   case M_POST:             x = DAV_METHOD_POST;             break;
+
+  /* REST methods */
+  case M_PUT:              x = DAV_METHOD_PUT;              break;
   case M_DELETE:           x = DAV_METHOD_DELETE;           break;
+  case M_PATCH:            x = DAV_METHOD_PATCH;            break;
 
   /* DAV methods */
-  case M_CONNECT:          x = DAV_METHOD_CONNECT;          break;
   case M_OPTIONS:          x = DAV_METHOD_OPTIONS;          break;
+  case M_CONNECT:          x = DAV_METHOD_CONNECT;          break;
   case M_TRACE:            x = DAV_METHOD_TRACE;            break;
-  case M_PATCH:            x = DAV_METHOD_PATCH;            break;
   case M_PROPFIND:         x = DAV_METHOD_PROPFIND;         break;
   case M_PROPPATCH:        x = DAV_METHOD_PROPPATCH;        break;
   case M_MKCOL:            x = DAV_METHOD_MKCOL;            break;
@@ -690,7 +696,7 @@ static int get_dav_method(int m)
   }
   return(x);
 }
-  
+
 static int mowa_handler(request_rec *r)
 {
     int          result;
@@ -1093,7 +1099,7 @@ static const char *mowa_uid(cmd_parms *cmd, owa_context *octx, char *uid)
     char *sptr;
 
     if (uid)
-    { 
+    {
         char *scramble = os_env_get("MODOWA_SCRAMBLE");
         if ((scramble) && (!str_char(uid, '/', 0) && !str_char(uid, '@', 0)))
         {
@@ -1721,7 +1727,7 @@ static apr_status_t oracle_nop(void *data)
 ** first in httpd.conf, and the obvious fact that the module must
 ** already be loaded in order for the directives to work!
 */
-static int oracle_module(apr_pool_t *p, apr_pool_t *ptemp, 
+static int oracle_module(apr_pool_t *p, apr_pool_t *ptemp,
                           apr_pool_t *plog, server_rec *s)
 {
     oracle_config *cfg;
@@ -1910,6 +1916,8 @@ ARG_PATTERN("OwaReject",       ARG_FN(mowa_reject), ACCESS_CONF,   TAKE1,
             "OwaReject <package/procedure prefix>"                     ),
 ARG_PATTERN("OwaEnv",          ARG_FN(mowa_env),    ACCESS_CONF,   TAKE2,
             "OwaEnv <variable name> <variable value>"                  ),
+ARG_PATTERN("OwaDadName",      ARG_SET(dad_name),   ACCESS_CONF,   TAKE1,
+            "OwaDadName <name of the data access descriptor>"          ),
 ARG_PATTERN("OwaDocPath",      ARG_SET(doc_path),   ACCESS_CONF,   TAKE1,
             "OwaDocPath <virtual path for document download>"          ),
 ARG_PATTERN("OwaDocProc",      ARG_SET(doc_proc),   ACCESS_CONF,   TAKE1,

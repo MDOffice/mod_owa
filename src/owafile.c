@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 1999-2016 Oracle Corporation, All rights reserved.
+** Copyright (c) 1999-2017 Oracle Corporation, All rights reserved.
 **
 **  Licensed under the Apache License, Version 2.0 (the "License");
 **  you may not use this file except in compliance with the License.
@@ -292,6 +292,9 @@
 ** 09/26/2013   D. McMahon      Get client IP address after socket_accept
 ** 04/24/2015   D. McMahon      Add os_get_user()
 ** 10/26/2015   J. Chung        OSX port from John T. Chung (nyquest.com)
+** 02/25/2017   D. McMahon      Add os_env_dump()
+** 12/19/2017   D. McMahon      Avoid 0-length writes in file_write_data()
+** 10/18/2018   D. McMahon      Replace fstat() with stat()
 */
 
 
@@ -328,9 +331,13 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/file.h>
+#ifndef AIX
 #include <sys/fcntl.h> /* For O_CREAT, O_RDONLY, O_WRONLY, O_APPEND */
+#endif
 #include <sys/poll.h>  /* For poll() */
 #include <pwd.h>       /* For getpwuid() */
+
+extern char **environ;
 
 # ifndef NO_FILE_CACHE  /* Less portable Unix headers */
 #  include <dirent.h>
@@ -1001,6 +1008,66 @@ char *os_env_set(char *name, char *value)
 #endif
 }
 
+/*
+** Dump the state of the environment one variable at a time.
+** Returns NULL when the last variable has been read.
+*/
+char *os_env_dump(char *prior, un_long position)
+{
+  un_long  count = 0;
+  char    *vptr = (position == 0) ? NULL : prior;
+#ifdef MODOWA_WINDOWS
+  /*
+  ** If no prior variable, walk through all of them until position is found
+  ** or the end is reached. If a prior is given, set position so that it
+  ** will just increment to the next item.
+  */
+  if (!vptr)
+    vptr = (char *)GetEnvironmentStrings();
+  else
+    position = 1;
+  /* Advance pointer by <position> items */
+  while (vptr)
+  {
+    int vlen = (int)strlen(vptr);
+    if (vlen == 0)
+      vptr = NULL;
+    else if (count++ == position)
+      break;
+    else
+      vptr += (++vlen);
+  }
+#else
+  /*
+  ** If a prior is given, make sure it matches the previous position.
+  ** If so, we can just return the requested position.
+  */
+  if (vptr)
+  {
+    if (environ[position-1] == vptr)
+      vptr = environ[position];
+    else
+      vptr = NULL;
+  }
+  /*
+  ** Otherwise we need to loop through the previous <position> values to
+  ** make sure we're not overreading the array.
+  */
+  if (!vptr)
+  {
+    for (vptr = NULL; environ[count]; ++count)
+    {
+      if (count == position)
+      {
+        vptr = environ[count];
+        break;
+      }
+    }
+  }
+#endif
+  return(vptr);
+}
+
 
 #ifdef MODOWA_WINDOWS
 
@@ -1056,7 +1123,9 @@ int file_write_data(os_objhand fp, char *buffer, int buflen)
     DWORD nbytes;
     if (InvalidFile(fp)) return(-1);
     nbytes = (DWORD)buflen;
-    if (!WriteFile(fp, buffer, nbytes, &nbytes, NULL)) return(-1);
+    if (nbytes > 0)
+        if (!WriteFile(fp, buffer, nbytes, &nbytes, NULL))
+            return(-1);
     return((int)nbytes);
 }
 
@@ -1374,9 +1443,9 @@ void file_seek(os_objhand fp, long offset)
 
 int file_write_data(os_objhand fp, char *buffer, int buflen)
 {
-    int nbytes;
+    int nbytes = 0;
     if (InvalidFile(fp)) return(-1);
-    nbytes = write(fp, buffer, buflen);
+    if (buflen > 0) nbytes = write(fp, buffer, buflen);
     return(nbytes);
 }
 
@@ -1402,64 +1471,18 @@ void file_close(os_objhand fp)
 
 #ifndef NO_FILE_CACHE
 
-/*
-** Allocate pages of virtual memory
-*/
-void *os_virt_alloc(size_t sz)
-{
-   void *ptr = (void *)0;
-#ifdef MODOWA_WINDOWS
-   if (sz)
-     ptr = VirtualAlloc(ptr, sz, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-     /* ### MEM_RESET is another way to use this routine ### */
-#else
-   if (sz)
-   {
-     ptr = mmap(ptr, sz, PROT_READ | PROT_WRITE,
-#ifdef OSX
-                MAP_ANONYMOUS | MAP_PRIVATE,
-#else /* !OSX */
-                MAP_ANON | MAP_PRIVATE,
-#endif
-                os_nullfilehand, (off_t)0);
-
-     if (ptr == MAP_FAILED) ptr = (void *)0;
-   }
-#endif
-   return(ptr);
-}
-
-/*
-** Free pages of virtual memory
-*/
-void os_virt_free(void *ptr, size_t sz)
-{
-#ifdef MODOWA_WINDOWS
-   if ((sz > 0) && (ptr != (void *)0))
-      VirtualFree(ptr, sz, MEM_RELEASE);
-#else
-   if ((sz > 0) && (ptr != (void *)0)) munmap(ptr, sz);
-#endif
-}
-
 os_objhand file_open_read(char *fpath, un_long *fsz, un_long *fage)
 {
     os_objhand  fd;
     time_t      tm;
     struct stat st;
 
+    if (stat(fpath, &st) != 0)
+        return(-1);
+    if (st.st_mode & S_IFDIR)
+        return(-1);
     fd = open(fpath, O_RDONLY);
     if (InvalidFile(fd)) return(-1);
-    if (fstat(fd, &st))
-    {
-        close(fd);
-        return(-1);
-    }
-    if (st.st_mode & S_IFDIR)
-    {
-        close(fd);
-        return(-1);
-    }
     /*
     ** ### WHICH OF THESE SHOULD BE USED:
     ** ### st_mtime (time of last modify to contents)
@@ -1617,6 +1640,50 @@ void os_shm_destroy(os_objhand hnd)
 #endif /* FILE_CACHE */
 
 #endif /* UNIX */
+
+#ifndef NO_FILE_CACHE
+
+/*
+** Allocate pages of virtual memory
+*/
+void *os_virt_alloc(size_t sz)
+{
+   void *ptr = (void *)0;
+#ifdef MODOWA_WINDOWS
+   if (sz)
+     ptr = VirtualAlloc(ptr, sz, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+     /* ### MEM_RESET is another way to use this routine ### */
+#else
+   if (sz)
+   {
+     ptr = mmap(ptr, sz, PROT_READ | PROT_WRITE,
+#ifdef OSX
+                MAP_ANONYMOUS | MAP_PRIVATE,
+#else /* !OSX */
+                MAP_ANON | MAP_PRIVATE,
+#endif
+                os_nullfilehand, (off_t)0);
+
+     if (ptr == MAP_FAILED) ptr = (void *)0;
+   }
+#endif
+   return(ptr);
+}
+
+/*
+** Free pages of virtual memory
+*/
+void os_virt_free(void *ptr, size_t sz)
+{
+#ifdef MODOWA_WINDOWS
+   if ((sz > 0) && (ptr != (void *)0))
+      VirtualFree(ptr, sz, MEM_RELEASE);
+#else
+   if ((sz > 0) && (ptr != (void *)0)) munmap(ptr, sz);
+#endif
+}
+
+#endif /* FILE_CACHE */
 
 os_thrhand thread_spawn(void (*thread_start)(void *),
                         void *thread_context,

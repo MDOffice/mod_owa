@@ -6,9 +6,9 @@
 <h2>(mod_owa)</h2>
 <h4><font color="#000080"><i>Doug McMahon</i>
 <br>(Doug.McMahon@oracle.com)</font></h4>
-<h4><font color="#c00000">September 9, 2016</font></h4>
-<h4>Version 2.11.3</h4>
-<p><font size="-1">Copyright (c) 1999-2016 Oracle Corporation,
+<h4><font color="#c00000">October 21, 2018</font></h4>
+<h4>Version 2.11.9</h4>
+<p><font size="-1">Copyright (c) 1999-2018 Oracle Corporation,
 All rights reserved.</font></p>
 </center>
 <hr size="2" noshade width="50%" align="center">
@@ -98,6 +98,7 @@ source code by setting the appropriate compiler flags.
 <li><a href="#_files">File Upload/Download</a></li>
 <li><a href="#_basic">Basic Authentication</a></li>
 <li><a href="#_raw">Raw Request Processing</a></li>
+<li><a href="#_status">Error Status Returns</a></li>
 </ul></li>
 <li><a href="#_options">Options</a>
 <ul type="circle">
@@ -148,15 +149,13 @@ mechanism.
 </p>
 
 <p>
-The original version of mod_owa was written by Alvydas Gelzinis
-(alvydas@kada.lt) and Oksana Kulikova (oksana@kada.lt), who still maintain
-their version at <a href="http://www.kada.lt/alv/apache/mod_owa">http://www.kada.lt/alv/apache/mod_owa</a>.  My
-version is a rewrite, adding functionality omitted by the original
-version, fixing several bugs, and adding some performance improvements.  The
-motivation for this was to provide access to OWA-based content through the
-Apache web server at a time when Oracle lacked an Apache strategy.  Edward
-Jiang (Edward.Jiang@oracle.com) contributed the file caching and range
-transfer support.
+The original version of mod_owa was written by Alvydas Gelzinis (alvydas@kada.lt)
+and Oksana Kulikova (oksana@kada.lt).  My version is a rewrite, adding
+functionality omitted by the original version, fixing several bugs, and
+adding some performance improvements.  The motivation for this was to provide
+access to OWA-based content through the Apache web server at a time when
+Oracle lacked an Apache strategy.  Edward Jiang (Edward.Jiang@oracle.com)
+contributed the file caching and range transfer support.
 </p>
 
 <p>
@@ -282,6 +281,8 @@ OwaAlternate directive:<br>
 
 <h4><a name="_enhance">Improvements and Enhancements</a></h4>
 <ul type="disc">
+<li>Add OwaDadName directive.</li>
+<li>Treat PATCH as a REST method for OwaHttp.</li>
 <li>OwaReject does exact matches for PACKAGE.PROCEDURE strings.</li>
 <li>Allow up to 32512 bytes wide for array bindings.</li>
 <li>OSX port by John T. Chung of Nyquest Consulting, LLC.</li>
@@ -372,6 +373,9 @@ invalidates connections in the pool.</li>
 
 <h4><a name="_bugs">Bugs Found/Fixed</a></h4>
 <ul type="disc">
+<li>Pass OwaStart procedure as the CGI variable PATH_INFO.</li>
+<li>Add space for trailing null after 32512 bytes.</li>
+<li>Fix missing mutex for multi-threaded connection pool.</li>
 <li>Fix separator scan for BIG-5, GBK, and Shift-JIS character sets.</li>
 <li>Strip trailing suffix on parameter names for multipart requests
 when in Apex mode.</li>
@@ -908,7 +912,7 @@ clock will run past the maximum value of a 32-bit signed integer and
 will wrap around, appearing to be a large negative integer, on or about
 January 19, 2038.  mod_owa is potentially vulnerable to this problem,
 although because it uses 32-bit unsigned integers, mod_owa's internal
-timestamp values may still work until approximately 2106.  mod_owa uses
+timestamp values may still work until approximately 2116.  mod_owa uses
 Unix-like timestamps internally even on Windows.  Any problem would most
 likely affect the file-system caching feature, because of the way timestamps
 are reported from that layer.  Other areas of the code that consult the
@@ -1176,11 +1180,46 @@ users sometimes accidentally break the environment variables is with
 mod_env.
 </p>
 </dd>
+<dt><p><u>OCI connection issues</u></p></dt>
+<dd>
+<p>
+The OCI connect operation can fail for any number of reasons.
+The primary ones are not having the Oracle environment variables
+set properly, lack of file-system access to ORACLE_HOME from the
+Apache run-time user, incorrect settings for TNSNAMES.ORA, or
+lack of access to the Oracle Wallet. To help diagnose some of
+these issues, you can set environment variable MODOWA_DUMP_ENV
+to a file path/name, and on connect failures, mod_owa will dump
+information (mainly the OS environment variables) to the
+specified file.
+</p>
+</dd>
+<dt><p><u>Firewall disconnects</u></p></dt>
+<dd>
+<p>
+Some users have reported that firewall or other networking infrastructure
+sometimes kills idle sqlnet connections without notifying the OCI that
+the socket connection to the database is no longer valid. This leads to
+sqlnet &quot;hangs&quot; when an idle (but now dead) connection is drawn
+from a connection pool. I'm not aware of any solution to this type of
+problem that I'm able to add to mod_owa. If OCI calls the socket layer
+to transmit SQL to the database, and doesn't get an error code from the
+operating system, it will then wait for a response from the database.
+If the message didn't get through, it will hang waiting for a response
+that will never come. I suspect that either the firewall or the OS is
+is not configured properly when this type of failure occurs. You might
+be able to avoid the problem by setting <tt><b>SQLNET.EXPIRE_TIME</b></tt>
+on the database server side to a value that cleanly closes outstanding
+connections at an interval that's more frequent than the firewall kills
+them. Another work-around is to set <tt><b>OwaPool</b></tt> to 0 to
+avoid mod_owa connection reuse entirely.
+</p>
+</dd>
 <dt><p><u>SELinux issues</u></p></dt>
 <dd>
 <p>
-It's important to make sure Oracle's OCI library and associated
-files in ORACLE_HOME are readable by the Apache worker processes.  Many users
+It's important to make sure Oracle's OCI library and associated files
+in ORACLE_HOME are readable by the Apache worker processes.  Many users
 running SELinux run into problems because they forget to do this.  A
 common symptom is to get file-system privilege errors when attempting
 to start Apache, often when loading libclntsh.so (the very first
@@ -1486,6 +1525,9 @@ Summary of directives:
 <tr valign="top" bgcolor="#e0f0ff">
 <td>OwaRefXml</td><td>&nbsp;&nbsp;</td><td>refcur_xml</td>
 <td>&nbsp;&nbsp;</td><td>set REF cursor XML tags</td></tr>
+<tr valign="top" bgcolor="#c0e0ff">
+<td>OwaDadName</td><td>&nbsp;&nbsp;</td><td>dad_name</td>
+<td>&nbsp;&nbsp;</td><td>set DAD_NAME CGI parameter</td></tr>
 <tr valign="top"><td colspan="5">&nbsp;</td></tr>
 <tr valign="top">
 <td colspan="5" align="center"><i>Global Directives</i></td></tr>
@@ -1927,7 +1969,8 @@ default for normal response to &quot;text/html&quot;:<br>
 <td><p>This optional directive specifies the level of HTTP protocol support.
 The default is &quot;NORMAL&quot;, which supports only GET and POST, and is
 compatible with previous releases of mod_owa. &quot;REST&quot; adds support
-for the PUT and DELETE methods. &quot;DAV&quot; is unsupported at this time.
+for the PUT, DELETE, and PATCH methods. &quot;DAV&quot; is unsupported at
+this time.
 </p></td></tr>
 <tr valign="top"><td align="right">OwaDav<br>
 <font color="#000080"><i>oracle_dav</i></font></td><td>&nbsp;&nbsp;</td>
@@ -1941,6 +1984,9 @@ and the namespace prefix and URI.  Example:<br>
 <font color="#000080">
 <b><tt>OwaRefXml  employees emp hr &quot;http://mycorp.com/hr&quot;</tt></b>
 </font></p></td></tr>
+<tr valign="top"><td align="right">OwaDadName<br>
+<font color="#000080"><i>dad_name</i></font></td><td>&nbsp;&nbsp;</td>
+<td><p>This directive sets the DAD_NAME CGI variable.</p></td></tr>
 
 <tr><td colspan="3"><br></td></tr>
 <tr valign="top" bgcolor="#80c0ff"><td colspan="2"><b>Directive</b></td>
@@ -3788,14 +3834,13 @@ http://mymachine/owa/~foobar
 </font></pre></dir></b>
 
 <p>
-Up to 32512 bytes of raw data (the PL/SQL limit) can be passed in this
-manner.  The two output arguments allow you to return a RAW response
-directly from your procedure.  If you return a non-null result for the
-BLOB, mod_owa will skip the normal GET_PAGE phase and use the contents
-of the BLOB as the response.  In that event mod_owa will take the document
-mime type from the second argument <i>(additional header values can also
-be passed in this buffer - see the previous section on file downloads
-for information on how to do that)</i>.
+Up to 32512 bytes of raw data can be passed in this manner.  The two output
+arguments allow you to return a RAW response directly from your procedure.
+If you return a non-null result for the BLOB, mod_owa will skip the normal
+GET_PAGE phase and use the contents of the BLOB as the response. In that
+event mod_owa will take the document mime type from the second argument
+<i>(additional header values can also be passed in this buffer - see the
+previous section on file downloads for information on how to do that)</i>.
 </p>
 
 <p>
@@ -3803,6 +3848,60 @@ If you are running the Oracle 7.3 build of mod_owa, the call will have
 only the first argument containing the RAW input data, because LOBs
 aren't supported.  You must therefore return your response via GET_PAGE
 or a GET_PAGE alternate <i>(see later section)</i>.
+</p>
+
+</dir>
+
+<h4><a name="_status">Error Status Returns</a></h4>
+<dir>
+<p>
+The PL/SQL gateway allows you to return an HTTP error status code via a
+call to <tt><b><font color="#000080">OWA_UTIL.STATUS_LINE</font></b></tt>.
+Example:
+</p>
+
+<b><font color="#000080"><dir><pre>
+OWA_UTIL.STATUS_LINE(404, Your_Key||' not found', TRUE);
+</pre></dir></font></b>
+
+<p>
+In general, mod_owa allows Apache to handle the generation of an error page
+by passing the status code back to Apache. How it gets handled depends on
+how you configure Apache. By default, Apache typically generates HTML error
+pages with boilerplate text. For example, it commonly generates an HTML page
+of the following form in response to a 404:
+</p>
+
+<dir>
+<p>
+<font color="#008000" size="+2"><b>Not Found</b></font><br><br>
+<font color="#008000">The requested URL <i>/xxxxx</i>
+was not found on this server.</font>
+</p>
+</dir>
+
+<p>
+When you allow Apache to handle the errors in this manner, it effectively
+rewrites them; your client will receive a status code of 200 and an HTML
+content page, instead of the original error code and message.
+</p>
+
+<p>
+mod_owa allows you to avoid this in most cases by supplying your own error
+page. The minimum requirement is that you supply a <tt><b>Content-Type</b></tt>
+header, for example:
+</p>
+
+<b><font color="#000080"><dir><pre>
+OWA_UTIL.MIME_HEADER('text/plain', FALSE);
+OWA_UTIL.STATUS_LINE(404, Your_Key||' not found', TRUE);
+</pre></dir></font></b>
+
+<p>
+You can optionally render your own error page following the headers. mod_owa
+will take either the presence of a <tt><b>Content-Type</b></tt> header or
+the presence of a content page as an indication that your PL/SQL wishes to
+control the error response. REST applications in particular may need to do this.
 </p>
 
 </dir>
@@ -4713,8 +4812,8 @@ DELETE requests, or even the full set of DAV requests.
 <ul type="disc">
 <li><b>NORMAL</b><br>The mod_owa default, compatible with earlier
 releases.</li>
-<li><b>REST</b><br>Enables mod_owa to handle PUT and DELETE to support REST
-services.</li>
+<li><b>REST</b><br>Enables mod_owa to handle PUT, DELETE, and PATCH
+to support REST services.</li>
 <li><b>DAV</b><br>Enables all DAV operations <font color="#c00000">(not yet
 completed)</font>.</li>
 </ul>
@@ -4725,7 +4824,8 @@ HTML form arguments, and the content body is not of zero length, mod_owa
 will treat it as a file upload. This is enabled only if REST or DAV is
 specified. The body is delivered as an extra parameter,
 <tt><b>MODOWA$CONTENT_BODY</b></tt>. For now, this works only with
-the Apex-style document upload (OwaDocTable).
+the Apex-style document upload (OwaDocTable). The HTTP method can be
+obtained from the CGI variable &quot;REQUEST_METHOD&quot;.
 </p>
 
 <p>
@@ -6401,7 +6501,8 @@ It would be very useful if the code were extended to provide hooks for
 supporting some level of the Web-DAV standard.  This would require
 picking up a dependency on an XML parser, though I believe I could
 use Oracle's which is public and should be available in the same
-library that supplies OCI.</li>
+library that supplies OCI.<br>
+Also, the OPTIONS verb should probably be supported as a REST method.</li>
 <li><b>Stateful sessions</b><br>
 Some users have requested that mod_owa support stateful applications,
 wherein database connections would be bound to particular user sessions

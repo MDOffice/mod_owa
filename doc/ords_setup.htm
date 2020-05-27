@@ -37,7 +37,7 @@
 
 <h4 align="center" class="blue"><i>Doug McMahon</i></h4>
 
-<h4 align="center" class="red">February 17, 2016</h4>
+<h4 align="center" class="red">Updated August 3, 2018</h4>
 
 <p>
 I wrote this informal how-to guide for the benefit of users who want to
@@ -427,7 +427,7 @@ time enter <tt><b>[2]</b><tt> when prompted to skip verifying/installing
 ORDS again. Then when prompted enter <tt><b>[1]</b></tt> to use the PL/SQL
 Gateway. Here is where you can enter the username (<tt>scott</tt> in my
 case) as the gateway username, and also enter the password (which is
-<u>case-sensitive</u>, another gotcha, so I made sure to enter lowercase
+<u>case-sensitive</u>, another gotcha, so I made sure to enter lower case
 &quot;tiger&quot;). Enter <tt><b>[2]</b></tt> to skip RESTful services
 again.
 </p>
@@ -446,14 +446,14 @@ pool in the <tt><b>conf</b></tt> sub-directory, e.g.
 <tt><b>conf/scott.xml</b></tt>.
 </i>
 
-<p class="red"><b>
+<p class="red">
 There may be some way to avoid this step and have ORDS proxy over to the
 <tt>scott</tt> user, but I can't figure out how to get that to work. Since
 this is what modplsql does, I though that ORDS would work this way,
 and I wasted my time trying in vain to get my application to run
 without setting up a separate connection pool because I did not
 understand that this apparently isn't allowed except for RESTful calls.
-</b></p>
+</p>
 
 </dir>
 
@@ -521,9 +521,47 @@ Note that if you've done just about anything wrong, you'll get 404 or 400 error
 pages from ORDS. Even with the debugging information switched on, the pages
 contain less-than-helpful messages such as &quot;...unable to dispatch...&quot;.
 This includes little mistakes like giving the password for <tt>scott</tt>
-in uppercase instead of lower case! Unfortunately it seems quite sensitive
+in upper case instead of lower case! Unfortunately it seems quite sensitive
 to minor mistakes and won't give you much of a clue as to what you've done
 wrong.
+</p>
+
+</dir>
+
+<h4>Implement the security callback</h4>
+
+<dir>
+
+<p>
+After the installation, the ORDS <tt><b>defaults.xml</b></tt> file may contain
+these lines:
+</p>
+
+<blockquote>
+<table cellspacing="2" cellpadding="0" border="0">
+<tr><td class="bgblack">
+<table cellspacing="2" cellpadding="2" border="0">
+<tbody class="bgwhite">
+<tr class="bgyellow">
+<td><pre>
+   &lt;entry key=&quot;security.requestValidationFunction&quot;&gt;<span class="green">wwv_flow_epg_include_modules.authorize</span>&lt;/entry&gt;
+   &lt;entry key=&quot;security.validationFunctionType&quot;&gt;<span class="green">plsql</span>&lt;/entry&gt;
+</pre></td>
+</tr>
+</tbody>
+</table>
+</td></tr>
+</table>
+</blockquote>
+
+<p class="red">
+Gotcha! This function almost certainly doesn't include your custom functions
+on a &quot;whitelist&quot; of allowed functions, and so you will get 403 errors
+from ORDS and you'll be wondering why. As a temporary testing measure, you can
+just comment those lines out. For production use, you'll have to investigate
+doing an actual implementation. For my test situation, I set this to call
+<tt><b>MODOWA_TEST_PKG.AUTHORIZE(PROC_NAME in varchar2)</b></tt> which returns
+TRUE for all procedures in the test package.
 </p>
 
 </dir>
@@ -536,7 +574,7 @@ wrong.
 You can run ORDS in the stand-alone mode, which runs the built-in Jetty
 application server. This is the best way to debug problems because the
 log output goes straight to your terminal window. (For example, when I
-used uppercase &quot;TIGER&quot; as the password, I got messages here
+used upper case &quot;TIGER&quot; as the password, I got messages here
 about how it was failing to start up the connection pool for
 <tt><b>scott</b></tt>, which was just about the only way I was
 told that I'd made that mistake.)
@@ -663,12 +701,12 @@ and it still works, because everything that was in ords.war is now expanded.)
 Tomcat will map ords to <tt><b>/ords</b></tt> in the URL space.
 </p>
 
-<p class="red"><b>
+<p class="red">
 Gotcha: you can't change the name of ords.war to, say, apex.war, pls.war,
 or any other name at this point in order to change where the application
 server maps it - you need to have done that at an earlier step! More on
 this below, along with a possible work-around.
-</b></p>
+</p>
 
 <p>
 Now, I can access my application with:
@@ -740,7 +778,7 @@ This worked for me, but I can't guarantee that all possible references
 would pivot to this change.
 </p>
 
-<p span="red">
+<p class="red">
 One last question that I can't answer: is the file
 <tt><b>params/ords_params.properties</b></tt> still relevant after deployment?
 It seems from the usage that this file is only used when you run ORDS
@@ -778,6 +816,90 @@ get ORDS to do this for PL/SQL Gateway requests. Is it even possible?
 </p>
 </dd>
 
+<dt><b>File upload/download</b></dt>
+<dd>
+<p>
+ORDS has a parameter for setting the staging table that is roughly equivalent
+to <tt><b>PlsqlDocumentTablename</b></tt>. It's <tt><b>apex.docTable</b></tt>.
+The documentation is a bit vague as to whether this would be put in
+<tt><b>defaults.xml</b></tt> (a file found in the configuration directory)
+or in one of the connection-pool files (e.g. <tt><b>conf/scott.xml</b></tt>).
+</p>
+<p>
+ORDS doesn't support an equivalent of <tt><b>PlsqlDocumentProcedure</b></tt>.
+If your application needs this feature, you'll have to work around the issue
+by coding a REST service endpoint. That's beyond the scope of this simple guide.
+A future version of ORDS will add this functionality.
+</p>
+<p class="red">
+Gotcha: ORDS looks to see if <tt><b>APEX_UTIL.FILE_UPLOAD</b></tt> is
+installed in your database. This happens at run-time. If this procedure is
+available, it's used to upload files <u>instead of the staging table</u>.
+Newer versions of Apex expect this (and mod_owa doesn't support it). If
+your legacy non-Apex application relies on a staging table, having Apex
+installed in your database will trigger this new behavior and file
+upload/download will appear not to work for your application. As a
+work-around, you might be able to hide this package by manually revoking
+execute permission on <tt><b>APEX_UTIL</b></tt> from your application's
+run-time user. For example, since I was testing as user <tt><b>SCOTT</b></tt>,
+it was sufficient for me to revoke execute on that package from user SCOTT,
+making it invisible to ORDS and causing ORDS to use the staging table instead.
+</p>
+</dd>
+
+<dt><b>Flexible argument calling conventions</b></dt>
+<dd>
+<p>
+The PL/SQL gateway has two calling conventions for flexible argument passing,
+both triggered by prepending an exclamation mark (!) ahead of the package
+and procedure name in the URL. The two-argument form passed two PL/SQL
+index-by tables of VARCHAR2 values, one with names and the other with values.
+The four-argument form passes a count of arguments, and then three index-by
+tables, one for names, one for values, and the last reserved (and unused).
+</p>
+
+<p class="red">
+Gotcha: ORDS only seems to support the 2-argument form.
+<p>
+
+<p>
+Moreover, OAS was able to automatically rewrite calls that lacked the
+required (!) prefix into flexible argument calls by doing describes on
+packages and procedures and then invoking the procedure using the flexible
+argument calling method. ORDS is not able to do this.
+</p>
+
+<p>
+The only solution is to ensure that your flexbile argument procedures use
+the 2-argument form, and that your URLs conform to the specification with
+the (!) prefix. If necessary, you can overload a procedure with a
+2-argument form that calls your existing 4-argument version using code
+such as this:
+</p>
+
+<blockquote>
+<pre class="code">
+procedure <span class="green">YOUR_FUNCTION</span>(NAME_ARRAY  in OWA.VC_ARR,
+                        VALUE_ARRAY in OWA.VC_ARR) is
+begin
+  <span class="green">YOUR_FUNCTION</span>(least(NAME_ARRAY.count(),VALUE_ARRAY.count()),
+                NAME_ARRAY, VALUE_ARRAY, VALUE_ARRAY);
+end;
+/
+</pre>
+</blockquote>
+
+<p>
+Another behavior that OAS apparently supported was parameter promotion and
+demotion. This was done by describing the procedure being called, and if
+necessary treating a single-value parameter as if it were an array of one
+value (promotion to array) or by ignoring all but the first of a multi-value
+parameter (demotion to a string). This behavior was never documented in
+modplsql. ORDS appears to handle these situations.
+</p>
+
+</dd>
+
 <dt><b>Flat-files needed after deployment</b></dt>
 <dd>
 <p>
@@ -787,10 +909,10 @@ to an application server. These properties appear to be relevant whenever
 you run a command-line operation such as the installation steps above.
 But what about when running ORDS stand-alone from the command line, do they
 still matter? All the database information (for the connection pools) appears
-to be present in the files within the configuration directory. Even the
-ORDS stand-alone properties (such as the port number for Jetty to use)
+to be present in the files within the <i>configuration</i> directory. Even
+the ORDS stand-alone properties (such as the port number for Jetty to use)
 appear to be present in the configuration directory (in
-<tt><b>standalone/standalone.properties</b><bb>). So does the installation
+<tt><b>standalone/standalone.properties</b><bb>). So does the <i>install</i>
 directory matter once you've completed the installation?
 </p>
 </dd>

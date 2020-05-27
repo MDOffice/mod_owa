@@ -12,180 +12,111 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e97df76a-a198-4b49-ab19-d266433e9ff9" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/encodings.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/mod_owa.iml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/modules.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/CMakeLists.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/apache22/modowa.conf" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/apache22/modowa.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/apache22_32/modowa.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/apache24/modowa.conf" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/apache24/modowa.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/apache24_32/modowa.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/desupport.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/eapi.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/license.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/license.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/modowa.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/modowa.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/modowa20.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/modowabug.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/ords_setup.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/osx_notes.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/owad.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/owaj.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/doc/plsqlbug.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/modtest/modtest.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/modtest/modtest.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/modtest/stress.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/modtest/stress.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/modtest/tunnel.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/modtest/tunnel.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/owad/modowa.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/owad/owad.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/owad/owad.conf" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/owad/owad.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/modowa.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/modowa.h" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owacache.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owadoc.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owafile.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owahand.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owalog.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owanls.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owaplsql.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owasql.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/owautil.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/demoalt.sql" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/demoauth.sql" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/demodoc.sql" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/modowa.sql" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/ocitest.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/ocitest.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/owajtest.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/owatest.htm" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/owatest.sql" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/scramble.c" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/scramble.mak" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test/tables.sql" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/mod_owa.dll" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/mod_owa.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/modowa.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/modowa.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owacache.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owacache.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owadoc.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owadoc.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owafile.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owafile.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owahand.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owahand.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owalog.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owalog.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owanls.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owanls.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owaplsql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owaplsql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owasql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owasql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22/owautil.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22/owautil.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/mod_owa.dll" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/mod_owa.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/modowa.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/modowa.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owacache.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owacache.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owadoc.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owadoc.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owafile.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owafile.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owahand.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owahand.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owalog.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owalog.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owanls.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owanls.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owaplsql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owaplsql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owasql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owasql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache22_32/owautil.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache22_32/owautil.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/mod_owa.dll" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/mod_owa.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/modowa.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/modowa.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owacache.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owacache.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owadoc.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owadoc.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owafile.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owafile.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owahand.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owahand.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owalog.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owalog.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owanls.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owanls.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owaplsql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owaplsql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owasql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owasql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24/owautil.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24/owautil.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/mod_owa.dll" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/mod_owa.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/modowa.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/modowa.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owacache.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owacache.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owadoc.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owadoc.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owafile.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owafile.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owahand.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owahand.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owalog.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owalog.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owanls.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owanls.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owaplsql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owaplsql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owasql.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owasql.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apache24_32/owautil.obj" beforeDir="false" afterPath="$PROJECT_DIR$/apache24_32/owautil.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/desupport.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/eapi.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/license.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/license.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modowa.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modowa.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modowa20.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modowabug.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/ords_setup.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/osx_notes.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/owad.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/owaj.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/plsqlbug.htm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/owad/modowa.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/owad/owad.c" beforeDir="false" afterPath="$PROJECT_DIR$/owad/owad.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/owad/owad.exe" beforeDir="false" afterPath="$PROJECT_DIR$/owad/owad.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/owad/owad.obj" beforeDir="false" afterPath="$PROJECT_DIR$/owad/owad.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modowa.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/modowa.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modowa.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/modowa.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owacache.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owacache.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owadoc.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owadoc.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owafile.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owafile.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owahand.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owahand.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owalog.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owalog.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owanls.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owanls.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owaplsql.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owaplsql.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owasql.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owasql.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/owautil.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/owautil.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/owatest.sql" beforeDir="false" afterPath="$PROJECT_DIR$/test/owatest.sql" afterDir="false" />
     </list>
-    <ignored path="mod_owa.iws" />
-    <ignored path=".idea/workspace.xml" />
-    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
-    <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
-  </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
-  <component name="FavoritesManager">
-    <favorites_list name="mod_owa" />
-  </component>
-  <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="102">
-              <caret line="6" column="14" selection-start-line="6" selection-start-column="14" selection-end-line="6" selection-end-column="14" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="IdeDocumentHistory">
-    <option name="CHANGED_PATHS">
-      <list>
-        <option value="$PROJECT_DIR$/.gitignore" />
-      </list>
-    </option>
-  </component>
-  <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
-  <component name="JsBuildToolPackageJson" detection-done="true" sorting="DEFINITION_ORDER" />
-  <component name="JsGulpfileManager">
-    <detection-done>true</detection-done>
-    <sorting>DEFINITION_ORDER</sorting>
-  </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="363" />
-    <option name="y" value="12" />
-    <option name="width" value="1400" />
-    <option name="height" value="1000" />
-  </component>
-  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
-    <OptionsSetting value="true" id="Add" />
-    <OptionsSetting value="true" id="Remove" />
-    <OptionsSetting value="true" id="Checkout" />
-    <OptionsSetting value="true" id="Update" />
-    <OptionsSetting value="true" id="Status" />
-    <OptionsSetting value="true" id="Edit" />
-    <ConfirmationsSetting value="0" id="Add" />
-    <ConfirmationsSetting value="0" id="Remove" />
-  </component>
-  <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
-      <flattenPackages />
-      <showMembers />
-      <showModules />
-      <showLibraryContents />
-      <hideEmptyPackages />
-      <abbreviatePackageNames />
-      <autoscrollToSource />
-      <autoscrollFromSource />
-      <sortByType />
-      <manualOrder />
-      <foldersAlwaysOnTop value="true" />
-    </navigator>
-    <panes>
-      <pane id="ProjectPane">
-        <subPane>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="mod_owa" />
-              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="mod_owa" />
-              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="mod_owa" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-        </subPane>
-      </pane>
-    </panes>
+  <component name="ProjectId" id="1cTvCI1sIH9ZQNqWCsHc33Qz5wH" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="js-jscs-nodeInterpreter" value="C:\Program Files\nodejs\node.exe" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
   </component>
-  <component name="RunManager" selected="Application.Build All">
+  <component name="RunManager">
     <configuration default="true" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" PASS_PARENT_ENVS_2="true" PROJECT_NAME="mod_owa" TARGET_NAME="mod_owa" CONFIG_NAME="Debug" TEST_MODE="SUITE_TEST">
       <envs />
       <method />
     </configuration>
     <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="mod_owa" TARGET_NAME="mod_owa" CONFIG_NAME="Debug">
       <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
       <method />
     </configuration>
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -215,16 +146,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="mod_owa" />
-      <method />
-    </configuration>
-    <configuration default="true" type="js.build_tools.gulp" factoryName="Gulp.js">
-      <method />
-    </configuration>
-    <configuration default="true" type="js.build_tools.npm" factoryName="npm">
-      <command value="run-script" />
-      <scripts />
-      <node-interpreter value="project" />
-      <envs />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Attests">
@@ -340,13 +261,18 @@
       <envs />
       <method />
     </configuration>
-    <list size="2">
-      <item index="0" class="java.lang.String" itemvalue="Application.Build All" />
-      <item index="1" class="java.lang.String" itemvalue="Application.mod_owa" />
-    </list>
+    <configuration default="true" type="js.build_tools.gulp">
+      <node-interpreter>project</node-interpreter>
+      <node-options />
+      <gulpfile />
+      <tasks />
+      <arguments />
+      <envs />
+      <method v="2" />
+    </configuration>
   </component>
-  <component name="ShelveChangesManager" show_recycled="false">
-    <option name="remove_strategy" value="false" />
+  <component name="SvnConfiguration">
+    <configuration />
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -355,58 +281,14 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1473800768199</updated>
+      <workItem from="1590565271152" duration="1362000" />
     </task>
     <servers />
   </component>
-  <component name="ToolWindowManager">
-    <frame x="363" y="12" width="1400" height="1000" extended-state="0" />
-    <editor active="false" />
-    <layout>
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32921347" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-    </layout>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="2" />
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.gitignore" />
-  </component>
-  <component name="VcsContentAnnotationSettings">
-    <option name="myLimit" value="2678400000" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager />
-    <watches-manager />
-  </component>
-  <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" column="14" selection-start-line="6" selection-start-column="14" selection-end-line="6" selection-end-column="14" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
   </component>
 </project>

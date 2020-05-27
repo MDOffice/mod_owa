@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 1999-2016 Oracle Corporation, All rights reserved.
+** Copyright (c) 1999-2017 Oracle Corporation, All rights reserved.
 **
 **  Licensed under the Apache License, Version 2.0 (the "License");
 **  you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@
 ** 06/06/2013   D. McMahon      Add nls_utf8_char
 ** 09/11/2015   D. McMahon      Add nls_sanitize_header and nls_copy_identifier
 ** 09/09/2015   D. McMahon      GBK is reclassified as non-byte-unique
+** 03/08/2018   D. McMahon      Added WE8ISO8859P15 (latin-9)
 */
 
 #include <modowa.h>
@@ -88,12 +89,14 @@
 #define SJIS1_CSID    832                 /* SJIS character set ID         */
 #define SJIS2_CSID    834                 /* SJIS+YEN character set ID     */
 #define SJIS3_CSID    836                 /* SJIS Mac character set ID     */
+#define SJIS4_CSID    838                 /* SJIS+TILDE character set ID   */
 #define BIG5_CSID     865                 /* BIG5 character set ID         */
 #define GBK_CSID      852                 /* GBK character set ID          */
 #define GB2312_CSID   850                 /* GB2312 character set ID       */
 #define ZHT32EUC_CSID 860                 /* Chinese 4-byte character set  */
 #define JEUC1_CSID    830                 /* JEUC character set ID         */
 #define JEUC2_CSID    831                 /* JEUC+YEN character set ID     */
+#define JEUC3_CSID    837                 /* JEUC+TILDE character set ID   */
 #define JA16VMS_CSID  829                 /* VMS 2-byte Japanese           */
 
 typedef struct cspair
@@ -208,6 +211,7 @@ static cspair cs_table[] =
 {c_null,              "iso_8859-9",            39}, /* duplicate */
 {c_null,              "iso-ir-148",            39}, /* duplicate */
 {c_null,              "iso_8859-9:1989",       39}, /* duplicate */
+{"WE8ISO8859P15",     "iso-8859-15",           46},
 {"NE8ISO8859P10",     "iso-8859-10",           40},
 {"US8PC437",          "ibm437",                 4},
 {c_null,              "cp437",                  4}, /* duplicate */
@@ -304,6 +308,7 @@ static cspair cs_table[] =
 {c_null,              "x-euc",                830}, /* duplicate */
 {c_null,              "x-euc-jp",             830}, /* duplicate */
 {"JA16EUCYEN",        "EUCJIS",               831}, /* 3 */
+{"JA16EUCTILDE",      "EUCJIS",               837}, /* 3 */
 {"JA16SJIS",          "shift-jis",            832}, /* 2 not byte-unique */
 {c_null,              "csshiftjis",           832}, /* duplicate */
 {c_null,              "cswindows31j",         832}, /* duplicate */
@@ -312,6 +317,7 @@ static cspair cs_table[] =
 {c_null,              "x-ms-cp932",           832}, /* duplicate */
 {c_null,              "x-sjis",               832}, /* duplicate */
 {"JA16SJISYEN",       "shift_jis",            834}, /* 2 not byte-unique */
+{"JA16SJISTILDE",     "shift_jis",            838}, /* 2 not byte-unique */
 {"KO16KSC5601",       "ks_c_5601",            840}, /* 2 */
 {c_null,              "korean",               840}, /* duplicate */
 {c_null,              "ks_c_5601-1987",       840}, /* duplicate */
@@ -373,11 +379,13 @@ int nls_cstype(int cs_id)
     case ZHT32EUC_CSID:
     case JEUC1_CSID:
     case JEUC2_CSID:
+    case JEUC3_CSID:
         return(2); /* Multi-byte set supported by nls_count_chars */
         break;
     case SJIS1_CSID:
     case SJIS2_CSID:
     case SJIS3_CSID:
+    case SJIS4_CSID:
     case BIG5_CSID:
     case GBK_CSID:
         return(3); /* Not byte-unique multi-byte set supported */
@@ -673,7 +681,8 @@ int nls_count_chars(int cs_id, char *outbuf, un_long *nbytes)
                 **   0xff       2-byte lead  undefined       2-byte
                 */
                 else if ((k == 0x8F) &&
-                         ((cs_id == JEUC1_CSID) || (cs_id == JEUC2_CSID)))
+                         ((cs_id == JEUC1_CSID) || (cs_id == JEUC2_CSID) ||
+                          (cs_id == JEUC3_CSID)))
                     n = 3;
                 /*
                 ** For GB2312, this is an approximation
@@ -700,11 +709,11 @@ int nls_count_chars(int cs_id, char *outbuf, un_long *nbytes)
                 **   0xa0       single-byte  undefined       1-byte
                 **   0xa1-0xdf  single-byte  single-byte     1-byte
                 **   0xe0-0xfc  2-byte lead  2-byte lead     2-byte
-                **   0xfe-0xff  2-byte lead  undefined       2-byte
+                **   0xfd-0xff  2-byte lead  undefined       2-byte
                 */
                 else if (((k == 0x80) || ((k >= 0xA0) && (k < 0xE0))) &&
                          ((cs_id == SJIS1_CSID) || (cs_id == SJIS2_CSID) ||
-                          (cs_id == SJIS3_CSID)))
+                          (cs_id == SJIS3_CSID) || (cs_id == SJIS4_CSID)))
                     n = 1;
 
                 if ((i - j) >= n)
@@ -827,6 +836,7 @@ void nls_validate_path(char *spath, int cs_id)
         case SJIS1_CSID:
         case SJIS2_CSID:
         case SJIS3_CSID:
+        case SJIS4_CSID:
         case GBK_CSID:
         case BIG5_CSID:
         case JA16VMS_CSID:

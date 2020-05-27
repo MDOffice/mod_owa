@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 1999-2016 Oracle Corporation, All rights reserved.
+** Copyright (c) 1999-2017 Oracle Corporation, All rights reserved.
 **
 **  Licensed under the Apache License, Version 2.0 (the "License");
 **  you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@
 ** 03/06/2015   D. McMahon      Common error codes due to file permissions
 ** 04/26/2015   D. McMahon      Report external auth errors differently
 ** 10/13/2015   D. McMahon      Add sql_bind_chr()
+** 02/25/2017   D. McMahon      Dump environment on connect failures
+** 01/02/2018   D. McMahon      More info for environment handle failure errors
 */
 
 #define WITH_OCI
@@ -246,9 +248,9 @@ int sql_get_errpos(connection *c, OraCursor stmhp)
 /*
 ** Check to see if a file under ORACLE_HOME is readable
 */
-static int sql_check_access(char *ohome, char *fname)
+static int sql_check_access(char *ohome, char *fname, char *fpath)
 {
-    char        fpath[HTBUF_HEADER_MAX];
+#ifndef NO_FILE_CACHE
     char       *sptr;
     un_long     fsz, fage;
     os_objhand  fp;
@@ -257,7 +259,7 @@ static int sql_check_access(char *ohome, char *fname)
     olen = str_length(ohome);
     mem_copy(fpath, ohome, olen);
     sptr = fpath + olen;
-    str_concat(sptr, 0, fname, (sizeof(fpath)-olen-1));
+    str_concat(sptr, 0, fname, (HTBUF_HEADER_MAX-olen-1));
 #ifdef MODOWA_WINDOWS
     while (*sptr)
     {
@@ -268,7 +270,52 @@ static int sql_check_access(char *ohome, char *fname)
     fp = file_open_read(fname, &fsz, &fage);
     if (fp == os_nullfilehand) return((sword)1);
     file_close(fp);
+#endif
     return((sword)0);
+}
+
+/*
+** Dump the environment after a connection failure
+*/
+static void sql_dump_env(char *phase)
+{
+    os_objhand  fp;
+    char       *var = "----------------------------------------\n";
+    un_long     i;
+    int         oulen;
+    char        osusr[SQL_NAME_MAX+1];
+    char       *dumpfile = os_env_get("MODOWA_DUMP_ENV");
+
+    if (!dumpfile) return;
+
+    fp = file_open_write(dumpfile, 1, 1);
+    if (InvalidFile(fp)) return;
+
+    file_write_text(fp, var, str_length(var));
+    file_write_text(fp, "phase [", 7);
+    file_write_text(fp, phase, str_length(phase));
+    file_write_text(fp, "]", 1);
+
+    oulen = os_get_user(osusr, (int)sizeof(osusr));
+    if (oulen > 0)
+    {
+        file_write_text(fp, " user [", 7);
+        file_write_text(fp, osusr, oulen);
+        file_write_text(fp, "]", 1);
+    }
+    file_write_text(fp, "\n\n", 2);
+
+    var = NULL;
+
+    for (i = 0; i < 1000; ++i)
+    {
+        var = os_env_dump(var, i);
+        if (!var) break;
+        file_write_text(fp, var, str_length(var));
+        file_write_text(fp, "\n", 1);
+    }
+
+    file_close(fp);
 }
 
 /*
@@ -279,6 +326,7 @@ sword sql_connect(connection *c, owa_context *octx,
 {
     sword  status;
     sb4    oerrno = 0;
+    char  *phase = "Create OCI context";
     char  *sptr;
     char  *optr;
     char  *username;
@@ -289,6 +337,7 @@ sword sql_connect(connection *c, owa_context *octx,
     int    extauth = 0;
     ub4    lobempty;
     ub4    buflen;
+    char   osusr[SQL_NAME_MAX+1];
     char   buf[2048];
 
     c->mem_err = 0;
@@ -330,16 +379,22 @@ sword sql_connect(connection *c, owa_context *octx,
             ulen = str_length(authuser);
             plen = str_length(password);
 
+            phase = "End prior OCI session";
+
             /* Otherwise close old session and create new session for user */
             status = OCISessionEnd(c->svchp, c->errhp, c->seshp,
                                    (ub4)OCI_DEFAULT);
             if (status != OCI_SUCCESS) goto connerr;
+            ++phase;
             status = OCIAttrSet(c->seshp, (ub4)OCI_HTYPE_SESSION, username,
                                 (ub4)ulen, (ub4)OCI_ATTR_USERNAME, c->errhp);
             if (status != OCI_SUCCESS) goto connerr;
             status = OCIAttrSet(c->seshp, (ub4)OCI_HTYPE_SESSION, password,
                                 (ub4)plen, (ub4)OCI_ATTR_PASSWORD, c->errhp);
             if (status != OCI_SUCCESS) goto connerr;
+
+            phase = "Begin OCI session";
+
             status = OCISessionBegin(c->svchp, c->errhp, c->seshp,
                                      (ub4)OCI_CRED_RDBMS, (ub4)OCI_DEFAULT);
             if (status == OCI_SUCCESS_WITH_INFO)
@@ -348,6 +403,8 @@ sword sql_connect(connection *c, owa_context *octx,
                 status = OCI_SUCCESS;
             }
             if (status != OCI_SUCCESS) goto connerr;
+
+            phase = "Set server in service context";
             status = OCIAttrSet(c->svchp, (ub4)OCI_HTYPE_SVCCTX, c->seshp,
                                 (ub4)0, (ub4)OCI_ATTR_SESSION, c->errhp);
             if (status != OCI_SUCCESS) goto connerr;
@@ -426,8 +483,10 @@ sword sql_connect(connection *c, owa_context *octx,
                           (dvoid * (*)(dvoid *, dvoid *, size_t))0,
                           (dvoid (*)(dvoid *, dvoid *))0,
                           (size_t)0, (dvoid **)0);
-
     if (status != OCI_SUCCESS) goto handerr;
+
+    phase = "Allocate basic handles",
+
     status = OCIHandleAlloc(c->envhp, (dvoid **)&(c->errhp),
                             (ub4)OCI_HTYPE_ERROR, (size_t)0, (dvoid **)0);
     if (status != OCI_SUCCESS) goto handerr;
@@ -438,6 +497,7 @@ sword sql_connect(connection *c, owa_context *octx,
                             (ub4)OCI_HTYPE_SERVER, (size_t)0, (dvoid **)0);
     if (status != OCI_SUCCESS) goto handerr;
 
+    phase = "Attach to specified server";
     /*
     ** Attach to specified database server
     */
@@ -445,6 +505,7 @@ sword sql_connect(connection *c, owa_context *octx,
                              (ub4)OCI_DEFAULT);
     if (status != OCI_SUCCESS) goto connerr;
 
+    phase = "Set server in service context";
     /* Set the server for use with the service context */
     status = OCIAttrSet(c->svchp, (ub4)OCI_HTYPE_SVCCTX, c->srvhp, (ub4)0,
                         (ub4)OCI_ATTR_SERVER, c->errhp);
@@ -461,12 +522,14 @@ sword sql_connect(connection *c, owa_context *octx,
     */
     if ((ulen > 0) || (plen > 0))
     {
+      phase = "Set username and password";
       status = OCIAttrSet(c->seshp, (ub4)OCI_HTYPE_SESSION, username, (ub4)ulen,
                           (ub4)OCI_ATTR_USERNAME, c->errhp);
       if (status != OCI_SUCCESS) goto connerr;
       status = OCIAttrSet(c->seshp, (ub4)OCI_HTYPE_SESSION, password, (ub4)plen,
                           (ub4)OCI_ATTR_PASSWORD, c->errhp);
       if (status != OCI_SUCCESS) goto connerr;
+      phase = "Begin OCI session";
       status = OCISessionBegin(c->svchp, c->errhp, c->seshp,
                                (ub4)OCI_CRED_RDBMS, (ub4)OCI_DEFAULT);
     }
@@ -475,6 +538,7 @@ sword sql_connect(connection *c, owa_context *octx,
     */
     else
     {
+      phase = "Begin OCI session";
       status = OCISessionBegin(c->svchp, c->errhp, c->seshp,
                                (ub4)OCI_CRED_EXT, (ub4)OCI_DEFAULT);
       /* Remember external authentication failure */
@@ -487,10 +551,13 @@ sword sql_connect(connection *c, owa_context *octx,
         status = OCI_SUCCESS;
     }
     if (status != OCI_SUCCESS) goto connerr;
+
+    phase = "Set session in service context";
     status = OCIAttrSet(c->svchp, (ub4)OCI_HTYPE_SVCCTX, c->seshp, (ub4)0,
                         (ub4)OCI_ATTR_SESSION, c->errhp);
     if (status != OCI_SUCCESS) goto connerr;
 
+    phase = "Create cursor handles";
     /*
     ** Create reusable cursor handles
     */
@@ -544,6 +611,7 @@ sword sql_connect(connection *c, owa_context *octx,
 
 setup_connection:
 
+    phase = "Alter session";
     /*
     ** If NLS_LANGUAGE and NLS_TERRITORY specified, do ALTER SESSION
     */
@@ -728,8 +796,7 @@ connerr:
         */
         if ((oerrno == 1017) && (extauth))
         {
-          char osusr[SQL_NAME_MAX+1];
-          int  oulen = os_get_user(osusr, (int)sizeof(osusr));
+          int oulen = os_get_user(osusr, (int)sizeof(osusr));
           if (oulen > 0)
           {
             if (database)
@@ -742,7 +809,10 @@ connerr:
                            osusr);
           }
         }
+
+        sql_dump_env(phase);
     }
+
     return(status);
 
 handerr:
@@ -757,8 +827,11 @@ handerr:
             char       *ohome;
             int         elen;
             int         readable;
+            int         oserr;
 
 accesserr:
+            sql_dump_env(phase);
+
             ohome = os_env_get("ORACLE_HOME");
             if (!ohome) ohome = "";
             str_copy(c->errbuf, "OCI Error: Environment not created");
@@ -769,31 +842,41 @@ accesserr:
             }
             else
             {
+                char fpath[HTBUF_HEADER_MAX];
+                int  oulen = os_get_user(osusr, (int)sizeof(osusr));
+                if (oulen <= 0) *osusr = '\0';
+
                 fname = "/nls/data/lx1boot.nlb";
-                if (sql_check_access(ohome, fname))
+                if (sql_check_access(ohome, fname, fpath))
                 {
-                    os_str_print(c->errbuf + elen, " - %s%s not readable",
-                                 "[ORACLE_HOME]", fname);
+                    oserr = os_get_errno();
+                    os_str_print(c->errbuf + elen,
+                                 " - %s not readable (error %d) by %s",
+                                 fpath, oserr, osusr);
                     goto badaccess;
                 }
                 fname = "/oracore/zoneinfo/timezlrg.dat";
-                readable = sql_check_access(ohome, fname);
+                readable = sql_check_access(ohome, fname, fpath);
                 if (!readable)
                 {
                     fname = "/oracore/zoneinfo/timezlrg_1.dat";
-                    readable = sql_check_access(ohome, fname);
+                    readable = sql_check_access(ohome, fname, fpath);
                 }
                 if (!readable)
                 {
-                    os_str_print(c->errbuf + elen, " - %s%s not readable",
-                                 "[ORACLE_HOME]", fname);
+                    oserr = os_get_errno();
+                    os_str_print(c->errbuf + elen,
+                                 " - %s not readable (error %d) by %s",
+                                 fpath, oserr, osusr);
                     goto badaccess;
                 }
                 fname = "/rdbms/mesg/oraus.msb";
-                if (sql_check_access(ohome, fname))
+                if (sql_check_access(ohome, fname, fpath))
                 {
-                    os_str_print(c->errbuf + elen, " - %s%s not readable",
-                                 "[ORACLE_HOME]", fname);
+                    oserr = os_get_errno();
+                    os_str_print(c->errbuf + elen,
+                                 " - %s not readable (error %d) by %s",
+                                 fpath, oserr, osusr);
                     goto badaccess;
                 }
             }

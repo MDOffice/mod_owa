@@ -40,7 +40,7 @@ to *owa_handle_request* add
         sptr += str_concat(sptr, 0,
                            (char *)((spflag == 4) ? "\n     " : "\n   "), -1);
         sptr += str_concat(sptr, 0, "return;", -1);
-        sptr += str_concat(sptr, 0, "end", -1);
+        sptr += str_concat(sptr, 0, "end if", -1);
         sptr += str_concat(sptr, 0,
                            (char *)((spflag == 4) ? ";\n    " : ";\n  "), -1);
     }
