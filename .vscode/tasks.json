@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "run",
+      "type": "shell",
+      "command": "./run.bat",
+      "args": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "clear",
+      "type": "shell",
+      "command": "./clear.bat",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "configure",
+      "type": "shell",
+      "command": "./configure.bat",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

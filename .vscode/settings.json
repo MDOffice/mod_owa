@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.html": "html",
+        "httpd.h": "c",
+        "ap_mmn.h": "c",
+        "ap_config.h": "c",
+        "ap_config_layout.h": "c",
+        "modowa.h": "c",
+        "http_config.h": "c",
+        "windows.h": "c"
+    }
+}

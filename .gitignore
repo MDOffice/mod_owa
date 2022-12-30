@@ -1,1 +1,4 @@
 .idea
+*.obj
+*.exp
+*.lib
