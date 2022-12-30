@@ -18,4 +18,4 @@ Apache PL/SQL Gateway Module
 
 ## OwaValidation
 
-(MODIFY_1)[./MODIFY_1.md]
+[MODIFY_1](MODIFY_1.md)
