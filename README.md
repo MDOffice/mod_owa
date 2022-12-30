@@ -14,10 +14,9 @@ D:\Apache24.39 - Binaries
 D:\Apache24.39\src - Source
 # mod_owa
 Apache PL/SQL Gateway Module
-[https://oss.oracle.com/projects/mod_owa/dist/documentation/modowa.htm]
+[https://github.com/oracle/mod_owa]
 
 ## OwaValidation
-
 
 #### modowa.h
 to *struct owa_context* add
