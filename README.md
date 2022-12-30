@@ -7,6 +7,7 @@ Selected "MSVS build tool", "Cmake C++ tools", "Windows 11 SDK" in component or 
 Update ./configure.bat if need
 
 D:\Apache24.39 - Binaries
+
 D:\Apache24.39\src - Source
 
 P.S. apr_perms_set.h from https://apr.apache.org/
